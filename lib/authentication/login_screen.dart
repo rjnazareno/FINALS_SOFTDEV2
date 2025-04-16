@@ -1,5 +1,3 @@
-// ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ua_dating_app/authentication/registration_screen.dart';
@@ -139,6 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
       Get.snackbar(
         "Login Failed",
         e.toString().replaceAll("Exception: ", ""),
+        // ignore: deprecated_member_use
         backgroundColor: Colors.redAccent.withOpacity(0.9),
         colorText: Colors.white,
         snackPosition: SnackPosition.BOTTOM,

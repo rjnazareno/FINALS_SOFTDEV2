@@ -31,7 +31,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   void initState() {
     super.initState();
 
-    // Auto-fill email for Google user
     if (widget.isGoogleUser) {
       final currentUser = authController.currentUser;
       if (currentUser != null) {
@@ -57,11 +56,33 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               const Text("to get started", style: TextStyle(fontSize: 16, color: Colors.black)),
               const SizedBox(height: 20),
 
-              // Avatar Placeholder
-              const CircleAvatar(
-                radius: 60,
-                backgroundColor: Colors.black12,
-                backgroundImage: AssetImage("images/profile_avatar.png"),
+              Obx(() {
+                return CircleAvatar(
+                  radius: 60,
+                  backgroundImage: authController.profileImage != null
+                      ? FileImage(authController.profileImage!)
+                      : const AssetImage("images/profile_avatar.png") as ImageProvider,
+                  backgroundColor: Colors.black12,
+                );
+              }),
+
+              const SizedBox(height: 10),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.photo_camera, color: Colors.blue),
+                    onPressed: () => authController.pickImageFileFromCamera(),
+                    tooltip: "Take Photo",
+                  ),
+                  const SizedBox(width: 10),
+                  IconButton(
+                    icon: const Icon(Icons.photo_library, color: Colors.green),
+                    onPressed: () => authController.pickImageFileFromGallery(),
+                    tooltip: "Choose from Gallery",
+                  ),
+                ],
               ),
 
               const SizedBox(height: 30),
@@ -77,7 +98,6 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               buildCustomTextField(nameController, "Name", Icons.person),
               buildCustomTextField(emailController, "Email", Icons.email, isEnabled: !widget.isGoogleUser),
 
-              // Show password only if not Google
               if (!widget.isGoogleUser)
                 buildCustomTextField(passwordController, "Password", Icons.lock, isObscure: true),
 
@@ -115,7 +135,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           genderController.text.trim(),
                           lookingForController.text.trim(),
                           genderController.text.trim(),
-                          "additionalArgumentValue", // Replace with the actual value for the 10th argument
+                          "extra", // replace if needed
                         );
                       }
                       Get.offAll(() => const HomeScreen());
