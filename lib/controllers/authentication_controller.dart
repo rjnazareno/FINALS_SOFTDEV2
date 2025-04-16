@@ -17,7 +17,7 @@ class AuthenticationController extends GetxController {
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  get currentUser => null;
+  User? get currentUser => _auth.currentUser;
 
   @override
   void onInit() {
@@ -25,7 +25,7 @@ class AuthenticationController extends GetxController {
     pickedFile = Rx<File?>(null);
   }
 
-  // Pick from Gallery
+  // Pick image from Gallery
   Future<void> pickImageFileFromGallery() async {
     final image = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (image != null) {
@@ -34,7 +34,7 @@ class AuthenticationController extends GetxController {
     }
   }
 
-  // Pick from Camera
+  // Pick image from Camera
   Future<void> pickImageFileFromCamera() async {
     final image = await ImagePicker().pickImage(source: ImageSource.camera);
     if (image != null) {
@@ -43,7 +43,7 @@ class AuthenticationController extends GetxController {
     }
   }
 
-  // Create new user (email/password users)
+  // Create new user account
   Future<void> createNewUserAccount(
     String email,
     String password,
@@ -54,7 +54,7 @@ class AuthenticationController extends GetxController {
     String country,
     String lookingForInaPartner,
     String gender,
-    String s,
+    String status,
   ) async {
     try {
       final UserCredential credential = await _auth.createUserWithEmailAndPassword(
@@ -81,53 +81,13 @@ class AuthenticationController extends GetxController {
       );
 
       _showSnackbar("Account Created", "You have successfully created an account.", isSuccess: true);
+      Get.offAll(() => const HomeScreen());
     } catch (error) {
-      _showSnackbar("Account Creation Failed", "Error: $error", isSuccess: false);
+      _showSnackbar("Account Creation Failed", "$error", isSuccess: false);
     }
   }
 
-  // Google users complete profile (no need to create Firebase account again)
-  Future<void> storeGoogleUserProfile(
-    String name,
-    String age,
-    String phoneNo,
-    String city,
-    String country,
-    String lookingForInaPartner,
-    String gender,
-  ) async {
-    try {
-      final User? user = _auth.currentUser;
-      if (user == null) {
-        _showSnackbar("Error", "No Google user found.", isSuccess: false);
-        return;
-      }
-
-      String imageUrl = "";
-      if (profileImage != null) {
-        imageUrl = await uploadImageToStorage(profileImage!);
-      }
-
-      await _saveUserToFirestore(
-        uid: user.uid,
-        email: user.email ?? "",
-        name: name,
-        age: age,
-        phoneNo: phoneNo,
-        city: city,
-        country: country,
-        lookingForInaPartner: lookingForInaPartner,
-        gender: gender,
-        imageUrl: imageUrl,
-      );
-
-      _showSnackbar("Profile Saved", "Google user profile completed.", isSuccess: true);
-    } catch (e) {
-      _showSnackbar("Error", "Failed to save Google profile: $e", isSuccess: false);
-    }
-  }
-
-  // Upload to Firebase Storage
+  // Upload image to Firebase Storage
   Future<String> uploadImageToStorage(File imageFile) async {
     try {
       final fileName = DateTime.now().millisecondsSinceEpoch.toString();
@@ -168,42 +128,64 @@ class AuthenticationController extends GetxController {
     });
   }
 
-  // Show snackbars
-  void _showSnackbar(String title, String message, {bool isSuccess = true}) {
-    Get.snackbar(
-      title,
-      message,
-      backgroundColor: isSuccess ? Colors.green.withOpacity(0.7) : Colors.red.withOpacity(0.7),
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 2),
-    );
-  }
-
-  // Login user (email/password)
+  // Log in user securely
   Future<void> loginUser(String emailUser, String passwordUser) async {
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      // Attempt FirebaseAuth sign-in
+      UserCredential credential = await _auth.signInWithEmailAndPassword(
         email: emailUser,
         password: passwordUser,
       );
 
-      Get.snackbar(
-        "Logged In Successfully",
-        "Welcome back!",
-        backgroundColor: Colors.green.withOpacity(0.7),
-        colorText: Colors.white,
-      );
+      final userId = credential.user!.uid;
 
-      Get.to(() => const HomeScreen());
-    } catch (errorMsg) {
-      _showSnackbar("Login Failed", "Error: $errorMsg", isSuccess: false);
-    } finally {
-      // Any cleanup or final actions can go here if needed
+      // Check if user profile exists in Firestore
+      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+      if (!userDoc.exists) {
+        await _auth.signOut();
+        _showSnackbar("Login Failed", "User profile not found. Please register first.", isSuccess: false);
+        return;
+      }
+
+      final userData = userDoc.data();
+      if (userData == null || userData['email'] != emailUser) {
+        await _auth.signOut();
+        _showSnackbar("Login Failed", "Account data mismatch. Contact support.", isSuccess: false);
+        return;
+      }
+
+      // All good — login
+      _showSnackbar("Logged In Successfully", "Welcome back!", isSuccess: true);
+      Get.offAll(() => const HomeScreen());
+    } on FirebaseAuthException catch (e) {
+      String errorMsg = "Login failed. Please try again.";
+      if (e.code == 'user-not-found') {
+        errorMsg = "No user found for that email.";
+      } else if (e.code == 'wrong-password') {
+        errorMsg = "Incorrect password.";
+      }
+      _showSnackbar("Login Failed", errorMsg, isSuccess: false);
+    } catch (error) {
+      _showSnackbar("Login Failed", "Unexpected error: $error", isSuccess: false);
     }
+  }
+
+  // Helper to show snackbars
+  void _showSnackbar(String title, String message, {bool isSuccess = true}) {
+    Get.snackbar(
+      title,
+      message,
+      backgroundColor: isSuccess ? Colors.green.withOpacity(0.85) : Colors.redAccent.withOpacity(0.85),
+      colorText: Colors.white,
+      snackPosition: SnackPosition.TOP,
+      duration: const Duration(seconds: 3),
+    );
   }
 
   signInWithGoogle() {}
 
   checkUserProfileExists() {}
+
+  storeGoogleUserProfile(String trim, String trim2, String trim3, String trim4, String trim5, String trim6, String trim7) {}
 }

@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:ua_dating_app/authentication/registration_screen.dart';
@@ -32,11 +34,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 40),
                 Image.asset('images/logo.png', width: 200),
                 const SizedBox(height: 20),
-                const Text('Welcome', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 68, 68, 68))),
+                const Text('Welcome',
+                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 68, 68, 68))),
                 const SizedBox(height: 10),
-                const Text('Please login to find your match', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)),
+                const Text('Please login to find your match',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)),
                 const SizedBox(height: 40),
-
                 CustomTextFieldWidget(
                   emailTextEditingController,
                   labelText: 'Email',
@@ -53,7 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   isEnabled: true,
                 ),
                 const SizedBox(height: 30),
-
                 showProgressBar
                     ? const CircularProgressIndicator()
                     : SizedBox(
@@ -71,7 +73,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ),
-
                 const SizedBox(height: 20),
                 Row(
                   children: [
@@ -84,7 +85,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
                 const SizedBox(height: 20),
-
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton.icon(
@@ -98,7 +98,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
-
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {
@@ -118,12 +117,32 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleEmailPasswordLogin() async {
+    final email = emailTextEditingController.text.trim();
+    final password = passwordTextEditingController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      Get.snackbar(
+        "Missing Information",
+        "Please fill in both email and password.",
+        backgroundColor: Colors.orangeAccent,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     setState(() => showProgressBar = true);
+
     try {
-      await authController.loginUser(emailTextEditingController.text.trim(), passwordTextEditingController.text.trim());
-      Get.offAll(() => const HomeScreen());
+      await authController.loginUser(email, password);
     } catch (e) {
-      Get.snackbar("Login Failed", e.toString(), snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar(
+        "Login Failed",
+        e.toString().replaceAll("Exception: ", ""),
+        backgroundColor: Colors.redAccent.withOpacity(0.9),
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } finally {
       setState(() => showProgressBar = false);
     }
@@ -133,10 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => showProgressBar = true);
     try {
       await authController.signInWithGoogle();
-
-      // Check if user already has profile in Firestore
       bool isProfileExists = await authController.checkUserProfileExists();
-
       if (isProfileExists) {
         Get.offAll(() => const HomeScreen());
       } else {
