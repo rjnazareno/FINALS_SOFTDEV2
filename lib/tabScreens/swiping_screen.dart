@@ -78,8 +78,8 @@ class _SwipingScreenState extends State<SwipingScreen> {
                           if ((eachProfileInfo.courseOrStrand ?? '').isNotEmpty)
                             _infoChip(eachProfileInfo.courseOrStrand!),
                           const SizedBox(width: 8),
-                          if ((eachProfileInfo.lookingForInaPartner ?? '').isNotEmpty)
-                            _infoChip(eachProfileInfo.lookingForInaPartner!),
+                          if ((eachProfileInfo.selectedGender ?? '').isNotEmpty)
+                            _infoChip(eachProfileInfo.selectedGender!),
                         ],
                       ),
                       const SizedBox(height: 32),

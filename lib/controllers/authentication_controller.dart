@@ -56,8 +56,9 @@ class AuthenticationController extends GetxController {
     String city,
     String courseOrStrand,
     String lookingForInaPartner,
-    String gender,
-    String status, String s,
+    String selectedGender,
+    String status, 
+    String extra,
   ) async {
     try {
       final UserCredential credential = await _auth.createUserWithEmailAndPassword(
@@ -79,7 +80,7 @@ class AuthenticationController extends GetxController {
         city: city,
         courseOrStrand: courseOrStrand,
         lookingForInaPartner: lookingForInaPartner,
-        gender: gender,
+        gender: selectedGender,
         imageUrl: imageUrl,
       );
 
@@ -211,5 +212,5 @@ class AuthenticationController extends GetxController {
 
   checkUserProfileExists() {}
 
-  storeGoogleUserProfile(String trim, String trim2, String trim3, String trim4, String trim5, String trim6, String trim7, String trim8) {}
+  storeGoogleUserProfile(String trim, String trim2, String trim3, String trim4, String trim5, String trim6, String trim7) {}
 }

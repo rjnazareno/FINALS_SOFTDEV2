@@ -21,9 +21,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController ageController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController cityController = TextEditingController();
-  final TextEditingController genderController = TextEditingController();
   final TextEditingController courseOrStrandController = TextEditingController();
   final TextEditingController lookingForController = TextEditingController();
+
+  String? selectedGender; // Dropdown selection variable
 
   final authController = Get.find<AuthenticationController>();
   bool isLoading = false;
@@ -105,7 +106,33 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               buildCustomTextField(ageController, "Age", Icons.cake),
               buildCustomTextField(phoneController, "Phone", Icons.phone),
               buildCustomTextField(cityController, "City", Icons.location_city),
-              buildCustomTextField(genderController, "Gender", Icons.wc),
+              
+              // Gender DropdownButton
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: DropdownButtonFormField<String>(
+                  value: selectedGender,
+                  onChanged: (String? newValue) {
+                    setState(() {
+                      selectedGender = newValue;
+                    });
+                  },
+                  items: <String>['Male', 'Female']
+                      .map<DropdownMenuItem<String>>((String value) {
+                    return DropdownMenuItem<String>(
+                      value: value,
+                      child: Text(value),
+                    );
+                  }).toList(),
+                  decoration: InputDecoration(
+                    labelText: "Gender",
+                    prefixIcon: Icon(Icons.wc),
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) => value == null ? 'Please select a gender' : null,
+                ),
+              ),
+
               buildCustomTextField(courseOrStrandController, "Course/Strand", Icons.school),
               buildCustomTextField(lookingForController, "Looking For", Icons.favorite),
 
@@ -122,10 +149,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ageController.text.trim(),
                           phoneController.text.trim(),
                           cityController.text.trim(),
-                          genderController.text.trim(),
+                          selectedGender!, // Gender selected via dropdown
                           courseOrStrandController.text.trim(),
                           lookingForController.text.trim(),
-                          genderController.text.trim(),
                         );
                       } else {
                         await authController.createNewUserAccount(
@@ -135,10 +161,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           ageController.text.trim(),
                           phoneController.text.trim(),
                           cityController.text.trim(),
-                          genderController.text.trim(),
+                          selectedGender!, // Gender selected via dropdown
                           courseOrStrandController.text.trim(),
                           lookingForController.text.trim(),
-                          genderController.text.trim(),
+                          authController.profileImage != null ? authController.profileImage!.path : "", // Image path
                           "extra", // replace if needed
                         );
                       }
@@ -201,7 +227,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         ageController.text.isEmpty ||
         phoneController.text.isEmpty ||
         cityController.text.isEmpty ||
-        genderController.text.isEmpty ||
+        selectedGender == null || // Check if gender is selected
         courseOrStrandController.text.isEmpty ||
         lookingForController.text.isEmpty) {
       Get.snackbar("Validation Error", "Please fill in all fields");

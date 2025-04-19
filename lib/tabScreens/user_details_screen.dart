@@ -42,25 +42,26 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
 
   Widget _buildUserInfo(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 130,
-            child: Text(
-              "$label:",
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 15,
-                color: Color.fromARGB(255, 68, 68, 68),
-              ),
+          Text(
+            "$label: ",
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 17,
+              color: Color.fromARGB(255, 51, 51, 51),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 15, color: Colors.black87),
+              style: const TextStyle(
+                fontSize: 17,
+                color: Colors.black87,
+                height: 1.4, // better line height for readability
+              ),
             ),
           ),
         ],
@@ -71,10 +72,10 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text("Profile"),
+        title: const Text("User Profile"),
         backgroundColor: Colors.redAccent,
+        elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
@@ -83,6 +84,7 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
           ),
         ],
       ),
+      backgroundColor: const Color(0xFFF7F7F7),
       body: FutureBuilder<DocumentSnapshot>(
         future: _userFuture,
         builder: (context, snapshot) {
@@ -96,56 +98,76 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
 
           final data = snapshot.data!.data() as Map<String, dynamic>;
 
-          return Padding(
-            padding: const EdgeInsets.all(20),
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Square profile picture
-                Center(
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: data['imageProfile'] != null &&
-                            data['imageProfile'].toString().isNotEmpty
-                        ? Image.network(
-                            data['imageProfile'],
-                            height: 180,
-                            width: 180,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            height: 180,
-                            width: 180,
-                            color: Colors.grey[300],
-                            child: const Icon(
-                              Icons.person,
-                              size: 80,
-                              color: Colors.white,
-                            ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: data['imageProfile'] != null &&
+                          data['imageProfile'].toString().isNotEmpty
+                      ? Image.network(
+                          data['imageProfile'],
+                          height: 180,
+                          width: 180,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          height: 180,
+                          width: 180,
+                          color: Colors.grey[300],
+                          child: const Icon(
+                            Icons.person,
+                            size: 80,
+                            color: Colors.white,
                           ),
-                  ),
+                        ),
                 ),
-
                 const SizedBox(height: 30),
-
-                const Text(
-                  "Personal Info:",
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color.fromARGB(255, 68, 68, 68),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Personal Info",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 51, 51, 51),
+                    ),
                   ),
                 ),
-                const Divider(thickness: 1.2, color: Colors.black26),
+                const SizedBox(height: 8),
+                const Divider(thickness: 1.5, color: Colors.black26),
+                const SizedBox(height: 16),
 
-                _buildUserInfo("Name", data['name'] ?? "N/A"),
-                _buildUserInfo("Age", data['age'] ?? "N/A"),
-                _buildUserInfo("Phone", data['phoneNo'] ?? "N/A"),
-                _buildUserInfo("City", data['city'] ?? "N/A"),
-                _buildUserInfo("Gender", data['courseOrStrand'] ?? "N/A"),
-                _buildUserInfo("Course/Strand", data['lookingForInaPartner'] ?? "N/A"),
-                _buildUserInfo("Looking For", data['gender'] ?? "N/A"),
-                _buildUserInfo("Email", data['email'] ?? "N/A"),
+                // Info card container
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildUserInfo("Name", data['name'] ?? "N/A"),
+                      _buildUserInfo("Age", data['age'] ?? "N/A"),
+                      _buildUserInfo("Phone", data['phoneNo'] ?? "N/A"),
+                      _buildUserInfo("City", data['city'] ?? "N/A"),
+                      _buildUserInfo("Gender", data['courseOrStrand'] ?? "N/A"),
+                      _buildUserInfo("Course/Strand", data['lookingForInaPartner'] ?? "N/A"),
+                      _buildUserInfo("Looking For", data['gender'] ?? "N/A"),
+                      _buildUserInfo("Email", data['email'] ?? "N/A"),
+                    ],
+                  ),
+                ),
               ],
             ),
           );
