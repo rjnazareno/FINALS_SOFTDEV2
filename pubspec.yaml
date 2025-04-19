@@ -40,6 +40,8 @@ dependencies:
   firebase_core:
   firebase_auth: 
   firebase_storage: 
+  firebase_messaging:
+  flutter_image_slider: 
   google_sign_in:
   go_router: 
 
@@ -71,6 +73,9 @@ flutter:
    - images/profile_avatar.png
    - images/logo.png
    - images/google.png
+   - images/like.png
+   - images/back.png
+   - images/fav.png
    
 
 

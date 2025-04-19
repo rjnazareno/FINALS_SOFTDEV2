@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:ua_dating_app/tabScreens/favorite_sent_favorite_received_screen.dart';
-import 'package:ua_dating_app/tabScreens/like_sent_like_received_screem.dart';
+import 'package:ua_dating_app/tabScreens/like_sent_like_received_screen.dart';
 import 'package:ua_dating_app/tabScreens/swiping_screen.dart';
 import 'package:ua_dating_app/tabScreens/user_details_screen.dart';
 import 'package:ua_dating_app/tabScreens/view_sent_view_received_screen.dart';
@@ -19,7 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
     SwipingScreen(),
     ViewSentViewReceivedScreen(),
     FavoriteSentFavoriteReceivedScreen(),
-    LikeSentLikeReceivedScreem(),
+    LikeSentLikeReceivedScreen(),
     UserDetailsScreen(),
   ];
 

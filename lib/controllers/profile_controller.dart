@@ -8,17 +8,18 @@ class ProfileController extends GetxController {
 
   List<Person> get allUsersProfileList => usersProfileList.value;
 
+  final String currentUserID = FirebaseAuth.instance.currentUser?.uid ?? "";
+
   @override
   void onInit() {
     super.onInit();
 
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
+    if (currentUserID.isEmpty) return;
 
     usersProfileList.bindStream(
       FirebaseFirestore.instance
           .collection("users")
-          .where("uid", isNotEqualTo: currentUser.uid)
+          .where("uid", isNotEqualTo: currentUserID)
           .snapshots()
           .map((QuerySnapshot querySnapshot) {
         List<Person> profilesList = [];
@@ -30,5 +31,31 @@ class ProfileController extends GetxController {
         return profilesList;
       }),
     );
+  }
+
+  Future<void> likeSentAndLikeReceived(String toUserID, String senderName) async {
+    final currentUserRef =
+        FirebaseFirestore.instance.collection("users").doc(currentUserID);
+    final toUserRef = FirebaseFirestore.instance.collection("users").doc(toUserID);
+
+    final doc = await toUserRef.collection("likeReceived").doc(currentUserID).get();
+
+    if (doc.exists) {
+      // UNLIKE: Remove from both
+      await toUserRef.collection("likeReceived").doc(currentUserID).delete();
+      await currentUserRef.collection("likeSent").doc(toUserID).delete();
+    } else {
+      // LIKE: Add to both
+      await toUserRef.collection("likeReceived").doc(currentUserID).set({
+        "name": senderName,
+        "timestamp": FieldValue.serverTimestamp(),
+      });
+
+      await currentUserRef.collection("likeSent").doc(toUserID).set({
+        "timestamp": FieldValue.serverTimestamp(),
+      });
+    }
+
+    update(); // Triggers UI update if needed
   }
 }
