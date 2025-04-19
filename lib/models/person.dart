@@ -10,7 +10,7 @@ class Person {
   String? password;
   String? phoneNo;
   String? city;
-  String? gender;
+  String? selectedGender;
   String? profileHeading;
   String? courseOrStrand;
   String? lookingForInaPartner;
@@ -26,7 +26,7 @@ class Person {
     this.age,
     this.phoneNo,
     this.city,
-    this.gender,
+    this.selectedGender,
     this.profileHeading,
     this.lookingForInaPartner,
     this.courseOrStrand,
@@ -45,7 +45,7 @@ class Person {
       password: dataSnapshot["password"],
       phoneNo: dataSnapshot["phoneNo"],
       city: dataSnapshot["city"],
-      gender: dataSnapshot["gender"],
+      selectedGender: dataSnapshot["gender"],
       profileHeading: dataSnapshot["profileHeading"],
       courseOrStrand: dataSnapshot["courseOrStrand"],
       lookingForInaPartner: dataSnapshot["lookingForInaPartner"],
@@ -65,7 +65,7 @@ class Person {
       "password": password,
       "phoneNo": phoneNo,
       "city": city,
-      "gender": gender,
+      "gender": selectedGender,
       "profileHeading": profileHeading,
       "courseOrStrand": courseOrStrand,
       "lookingForInaPartner": lookingForInaPartner,
