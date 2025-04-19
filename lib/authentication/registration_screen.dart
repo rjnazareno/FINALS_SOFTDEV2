@@ -22,6 +22,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController cityController = TextEditingController();
   final TextEditingController genderController = TextEditingController();
+  final TextEditingController courseOrStrandController = TextEditingController();
   final TextEditingController lookingForController = TextEditingController();
 
   final authController = Get.find<AuthenticationController>();
@@ -105,6 +106,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               buildCustomTextField(phoneController, "Phone", Icons.phone),
               buildCustomTextField(cityController, "City", Icons.location_city),
               buildCustomTextField(genderController, "Gender", Icons.wc),
+              buildCustomTextField(courseOrStrandController, "Course/Strand", Icons.school),
               buildCustomTextField(lookingForController, "Looking For", Icons.favorite),
 
               const SizedBox(height: 30),
@@ -121,6 +123,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           phoneController.text.trim(),
                           cityController.text.trim(),
                           genderController.text.trim(),
+                          courseOrStrandController.text.trim(),
                           lookingForController.text.trim(),
                           genderController.text.trim(),
                         );
@@ -133,6 +136,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                           phoneController.text.trim(),
                           cityController.text.trim(),
                           genderController.text.trim(),
+                          courseOrStrandController.text.trim(),
                           lookingForController.text.trim(),
                           genderController.text.trim(),
                           "extra", // replace if needed
@@ -198,6 +202,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         phoneController.text.isEmpty ||
         cityController.text.isEmpty ||
         genderController.text.isEmpty ||
+        courseOrStrandController.text.isEmpty ||
         lookingForController.text.isEmpty) {
       Get.snackbar("Validation Error", "Please fill in all fields");
       return false;

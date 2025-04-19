@@ -7,10 +7,13 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ua_dating_app/authentication/login_screen.dart';
 import 'package:ua_dating_app/home_screen.dart';
 
 class AuthenticationController extends GetxController {
   static AuthenticationController get instance => Get.find();
+
+  late Rx<User?> firebaseCurrentUser;
 
   late Rx<File?> pickedFile;
   File? get profileImage => pickedFile.value;
@@ -51,10 +54,10 @@ class AuthenticationController extends GetxController {
     String age,
     String phoneNo,
     String city,
-    String country,
+    String courseOrStrand,
     String lookingForInaPartner,
     String gender,
-    String status,
+    String status, String s,
   ) async {
     try {
       final UserCredential credential = await _auth.createUserWithEmailAndPassword(
@@ -74,7 +77,7 @@ class AuthenticationController extends GetxController {
         age: age,
         phoneNo: phoneNo,
         city: city,
-        country: country,
+        courseOrStrand: courseOrStrand,
         lookingForInaPartner: lookingForInaPartner,
         gender: gender,
         imageUrl: imageUrl,
@@ -108,7 +111,7 @@ class AuthenticationController extends GetxController {
     required String age,
     required String phoneNo,
     required String city,
-    required String country,
+    required String courseOrStrand,
     required String lookingForInaPartner,
     required String gender,
     required String imageUrl,
@@ -120,7 +123,7 @@ class AuthenticationController extends GetxController {
       'age': age,
       'phoneNo': phoneNo,
       'city': city,
-      'country': country,
+      'courseOrStrand': courseOrStrand,
       'lookingForInaPartner': lookingForInaPartner,
       'gender': gender,
       'imageProfile': imageUrl,
@@ -183,9 +186,30 @@ class AuthenticationController extends GetxController {
     );
   }
 
+  checkifUserisLoggedIn(User? currentUser)  {
+    if (currentUser == null) 
+    {
+      Get.to(LoginScreen());
+    } 
+    else 
+    {
+      Get.to(HomeScreen());
+    }
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+
+    firebaseCurrentUser = Rx<User?>(FirebaseAuth.instance.currentUser);
+    firebaseCurrentUser.bindStream(FirebaseAuth.instance.authStateChanges());
+
+    ever(firebaseCurrentUser, checkifUserisLoggedIn);
+  }
+
   signInWithGoogle() {}
 
   checkUserProfileExists() {}
 
-  storeGoogleUserProfile(String trim, String trim2, String trim3, String trim4, String trim5, String trim6, String trim7) {}
+  storeGoogleUserProfile(String trim, String trim2, String trim3, String trim4, String trim5, String trim6, String trim7, String trim8) {}
 }
