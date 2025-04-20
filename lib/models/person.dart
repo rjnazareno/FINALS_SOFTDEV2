@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Person {
-  // Personal information
   String? uid;
   String? imageProfile;
   String? name;
@@ -16,7 +15,6 @@ class Person {
   String? lookingForInaPartner;
   int? publishedTime;
 
-  // Constructor
   Person({
     this.uid,
     this.imageProfile,
@@ -33,30 +31,25 @@ class Person {
     this.publishedTime,
   });
 
-  get gender => null;
-
-  // Factory method to create a Person object from a Firestore document snapshot
-  static Person fromDataSnapshot(DocumentSnapshot snapshot) {
-    var dataSnapshot = snapshot.data() as Map<String, dynamic>;
-
+  factory Person.fromDataSnapshot(DocumentSnapshot snapshot) {
+    var data = snapshot.data() as Map<String, dynamic>;
     return Person(
-      uid: dataSnapshot["uid"],
-      name: dataSnapshot["name"],
-      age: dataSnapshot["age"],
-      email: dataSnapshot["email"],
-      password: dataSnapshot["password"],
-      phoneNo: dataSnapshot["phoneNo"],
-      city: dataSnapshot["city"],
-      selectedGender: dataSnapshot["gender"],
-      profileHeading: dataSnapshot["profileHeading"],
-      courseOrStrand: dataSnapshot["courseOrStrand"],
-      lookingForInaPartner: dataSnapshot["lookingForInaPartner"],
-      publishedTime: dataSnapshot["publishedTime"],
-      imageProfile: dataSnapshot["imageProfile"],
+      uid: data["uid"],
+      name: data["name"],
+      age: data["age"],
+      email: data["email"],
+      password: data["password"],
+      phoneNo: data["phoneNo"],
+      city: data["city"],
+      selectedGender: data["gender"],
+      profileHeading: data["profileHeading"],
+      courseOrStrand: data["courseOrStrand"],
+      lookingForInaPartner: data["lookingForInaPartner"],
+      publishedTime: data["publishedTime"],
+      imageProfile: data["imageProfile"],
     );
   }
 
-  // Convert Person object to a Map for Firestore
   Map<String, dynamic> toJson() {
     return {
       "uid": uid,

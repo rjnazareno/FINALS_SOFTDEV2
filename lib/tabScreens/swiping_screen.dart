@@ -1,126 +1,121 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: deprecated_member_use, depend_on_referenced_packages
 
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ua_dating_app/controllers/profile_controller.dart';
 
-class SwipingScreen extends StatefulWidget {
+class SwipingScreen extends ConsumerWidget {
   const SwipingScreen({super.key});
 
   @override
-  State<SwipingScreen> createState() => _SwipingScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileController = ref.watch(profileControllerProvider.notifier); // Use the notifier
+    final profiles = ref.watch(profileControllerProvider); // Watch the profile list
 
-class _SwipingScreenState extends State<SwipingScreen> {
-  final ProfileController profileController = Get.put(ProfileController());
+    if (profiles.isEmpty) {
+      return const Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(child: Text("No profiles found.")),
+      );
+    }
 
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Obx(() {
-        if (profileController.allUsersProfileList.isEmpty) {
-          return const Center(child: Text("No profiles found."));
-        }
+      body: PageView.builder(
+        itemCount: profiles.length,
+        controller: PageController(initialPage: 0, viewportFraction: 1),
+        scrollDirection: Axis.horizontal,
+        itemBuilder: (context, index) {
+          final eachProfileInfo = profiles[index];
 
-        return PageView.builder(
-          itemCount: profileController.allUsersProfileList.length,
-          controller: PageController(initialPage: 0, viewportFraction: 1),
-          scrollDirection: Axis.horizontal,
-          itemBuilder: (context, index) {
-            final eachProfileInfo = profileController.allUsersProfileList[index];
-
-            return GestureDetector(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  image: DecorationImage(
-                    image: NetworkImage(eachProfileInfo.imageProfile ?? ''),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Container(
-                  alignment: Alignment.bottomCenter,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.7),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                    ),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text(
-                        eachProfileInfo.name ?? "Unknown",
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "${eachProfileInfo.age} • ${eachProfileInfo.city ?? 'Unknown'}",
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if ((eachProfileInfo.courseOrStrand ?? '').isNotEmpty)
-                            _infoChip(eachProfileInfo.courseOrStrand!),
-                          const SizedBox(width: 8),
-                          if ((eachProfileInfo.selectedGender ?? '').isNotEmpty)
-                            _infoChip(eachProfileInfo.selectedGender!),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
-
-                      /// Buttons Row
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _iconButton('images/back.png', onTap: () {
-                            // Optional: handle skip/back
-                          }),
-
-                          _iconButton('images/fav.png', onTap: () {
-                            // Optional: handle favorite
-                          }),
-
-                          _iconButton('images/like.png', onTap: () {
-                            profileController.likeSentAndLikeReceived(
-                              eachProfileInfo.uid ?? '',
-                              eachProfileInfo.name ?? 'Unknown',
-                            );
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text("You liked ${eachProfileInfo.name}"),
-                                backgroundColor: Colors.green,
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
-
-                      const SizedBox(height: 20),
-                    ],
-                  ),
+          return GestureDetector(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage(eachProfileInfo.imageProfile ?? ''),
+                  fit: BoxFit.cover,
                 ),
               ),
-            );
-          },
-        );
-      }),
+              child: Container(
+                alignment: Alignment.bottomCenter,
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      Colors.black.withOpacity(0.7),
+                    ],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      eachProfileInfo.name ?? "Unknown",
+                      style: const TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      "${eachProfileInfo.age} • ${eachProfileInfo.city ?? 'Unknown'}",
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
+                        color: Colors.white70,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if ((eachProfileInfo.courseOrStrand ?? '').isNotEmpty)
+                          _infoChip(eachProfileInfo.courseOrStrand!),
+                        const SizedBox(width: 8),
+                        if ((eachProfileInfo.selectedGender ?? '').isNotEmpty)
+                          _infoChip(eachProfileInfo.selectedGender!),
+                      ],
+                    ),
+                    const SizedBox(height: 32),
+
+                    /// Buttons Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _iconButton('images/back.png', onTap: () {
+                          // Optional: handle skip/back
+                        }),
+                        _iconButton('images/fav.png', onTap: () {
+                          // Optional: handle favorite
+                        }),
+                        _iconButton('images/like.png', onTap: () {
+                          profileController.likeSentAndLikeReceived(
+                            eachProfileInfo.uid ?? '',
+                            eachProfileInfo.name ?? 'Unknown',
+                          );
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("You liked ${eachProfileInfo.name}"),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 

@@ -1,53 +1,57 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
-import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+// ignore: depend_on_referenced_packages
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ua_dating_app/authentication/login_screen.dart';
 import 'package:ua_dating_app/home_screen.dart';
 
-class AuthenticationController extends GetxController {
-  static AuthenticationController get instance => Get.find();
+// Create a Riverpod provider for AuthenticationController
+final authControllerProvider = ChangeNotifierProvider<AuthenticationController>((ref) {
+  return AuthenticationController(ref);
+});
 
-  late Rx<User?> firebaseCurrentUser;
-
-  late Rx<File?> pickedFile;
-  File? get profileImage => pickedFile.value;
+class AuthenticationController extends ChangeNotifier {
+  final Ref ref;
+  AuthenticationController(this.ref);
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  File? _profileImage;
+  File? get profileImage => _profileImage;
 
   User? get currentUser => _auth.currentUser;
 
-  @override
-  void onInit() {
-    super.onInit();
-    pickedFile = Rx<File?>(null);
-  }
-
-  // Pick image from Gallery
-  Future<void> pickImageFileFromGallery() async {
+  // Pick an image from the gallery
+  Future<void> pickImageFileFromGallery(BuildContext context) async {
     final image = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (image != null) {
-      pickedFile.value = File(image.path);
-      _showSnackbar("Profile Image", "Successfully selected your profile image.");
+      _profileImage = File(image.path);
+      notifyListeners();
+      _showSnackbar(context, "Profile Image", "Successfully selected your profile image.", true);
     }
   }
 
-  // Pick image from Camera
-  Future<void> pickImageFileFromCamera() async {
+  // Pick an image from the camera
+  Future<void> pickImageFileFromCamera(BuildContext context) async {
     final image = await ImagePicker().pickImage(source: ImageSource.camera);
     if (image != null) {
-      pickedFile.value = File(image.path);
-      _showSnackbar("Profile Image", "Successfully captured your profile image.");
+      _profileImage = File(image.path);
+      notifyListeners();
+      _showSnackbar(context, "Profile Image", "Successfully captured your profile image.", true);
     }
   }
 
-  // Create new user account
+  // Create a new user account
   Future<void> createNewUserAccount(
+    BuildContext context,
     String email,
     String password,
     String name,
@@ -57,18 +61,15 @@ class AuthenticationController extends GetxController {
     String courseOrStrand,
     String lookingForInaPartner,
     String selectedGender,
-    String status, 
-    String extra,
+    String status,
+    String extra, String s,
   ) async {
     try {
-      final UserCredential credential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
+      final credential = await _auth.createUserWithEmailAndPassword(email: email, password: password);
       String imageUrl = "";
-      if (profileImage != null) {
-        imageUrl = await uploadImageToStorage(profileImage!);
+
+      if (_profileImage != null) {
+        imageUrl = await _uploadImageToStorage(_profileImage!);
       }
 
       await _saveUserToFirestore(
@@ -84,27 +85,23 @@ class AuthenticationController extends GetxController {
         imageUrl: imageUrl,
       );
 
-      _showSnackbar("Account Created", "You have successfully created an account.", isSuccess: true);
-      Get.offAll(() => const HomeScreen());
-    } catch (error) {
-      _showSnackbar("Account Creation Failed", "$error", isSuccess: false);
-    }
-  }
-
-  // Upload image to Firebase Storage
-  Future<String> uploadImageToStorage(File imageFile) async {
-    try {
-      final fileName = DateTime.now().millisecondsSinceEpoch.toString();
-      final ref = FirebaseStorage.instance.ref().child("profile_images/$fileName.jpg");
-      final uploadTask = ref.putFile(imageFile);
-      final snapshot = await uploadTask.whenComplete(() {});
-      return await snapshot.ref.getDownloadURL();
+      _showSnackbar(context, "Account Created", "You have successfully created an account.", true);
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
     } catch (e) {
-      throw Exception("Failed to upload image: $e");
+      _showSnackbar(context, "Account Creation Failed", "$e", false);
     }
   }
 
-  // Save user to Firestore
+  // Upload the image to Firebase Storage
+  Future<String> _uploadImageToStorage(File imageFile) async {
+    final fileName = DateTime.now().millisecondsSinceEpoch.toString();
+    final ref = _storage.ref().child("profile_images/$fileName.jpg");
+    final uploadTask = ref.putFile(imageFile);
+    final snapshot = await uploadTask.whenComplete(() {});
+    return await snapshot.ref.getDownloadURL();
+  }
+
+  // Save the user to Firestore
   Future<void> _saveUserToFirestore({
     required String uid,
     required String email,
@@ -117,7 +114,7 @@ class AuthenticationController extends GetxController {
     required String gender,
     required String imageUrl,
   }) async {
-    await FirebaseFirestore.instance.collection('users').doc(uid).set({
+    await _firestore.collection('users').doc(uid).set({
       'uid': uid,
       'email': email,
       'name': name,
@@ -132,36 +129,27 @@ class AuthenticationController extends GetxController {
     });
   }
 
-  // Log in user securely
-  Future<void> loginUser(String emailUser, String passwordUser) async {
+  // Log in with email and password
+  Future<void> loginUser(BuildContext context, String emailUser, String passwordUser) async {
     try {
-      // Attempt FirebaseAuth sign-in
-      UserCredential credential = await _auth.signInWithEmailAndPassword(
-        email: emailUser,
-        password: passwordUser,
-      );
-
-      final userId = credential.user!.uid;
-
-      // Check if user profile exists in Firestore
-      final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+      final credential = await _auth.signInWithEmailAndPassword(email: emailUser, password: passwordUser);
+      final userDoc = await _firestore.collection('users').doc(credential.user!.uid).get();
 
       if (!userDoc.exists) {
         await _auth.signOut();
-        _showSnackbar("Login Failed", "User profile not found. Please register first.", isSuccess: false);
+        _showSnackbar(context, "Login Failed", "User profile not found. Please register first.", false);
         return;
       }
 
       final userData = userDoc.data();
       if (userData == null || userData['email'] != emailUser) {
         await _auth.signOut();
-        _showSnackbar("Login Failed", "Account data mismatch. Contact support.", isSuccess: false);
+        _showSnackbar(context, "Login Failed", "Account data mismatch. Contact support.", false);
         return;
       }
 
-      // All good — login
-      _showSnackbar("Logged In Successfully", "Welcome back!", isSuccess: true);
-      Get.offAll(() => const HomeScreen());
+      _showSnackbar(context, "Logged In Successfully", "Welcome back!", true);
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
     } on FirebaseAuthException catch (e) {
       String errorMsg = "Login failed. Please try again.";
       if (e.code == 'user-not-found') {
@@ -169,48 +157,33 @@ class AuthenticationController extends GetxController {
       } else if (e.code == 'wrong-password') {
         errorMsg = "Incorrect password.";
       }
-      _showSnackbar("Login Failed", errorMsg, isSuccess: false);
+      _showSnackbar(context, "Login Failed", errorMsg, false);
     } catch (error) {
-      _showSnackbar("Login Failed", "Unexpected error: $error", isSuccess: false);
+      _showSnackbar(context, "Login Failed", "Unexpected error: $error", false);
     }
   }
 
-  // Helper to show snackbars
-  void _showSnackbar(String title, String message, {bool isSuccess = true}) {
-    Get.snackbar(
-      title,
-      message,
-      backgroundColor: isSuccess ? Colors.green.withOpacity(0.85) : Colors.redAccent.withOpacity(0.85),
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
+  // Show snackbar messages
+  void _showSnackbar(BuildContext context, String title, String message, bool isSuccess) {
+    final snackBar = SnackBar(
+      content: Text("$title\n$message"),
+      backgroundColor: isSuccess ? Colors.green : Colors.redAccent,
       duration: const Duration(seconds: 3),
     );
+    ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  checkifUserisLoggedIn(User? currentUser)  {
-    if (currentUser == null) 
-    {
-      Get.to(LoginScreen());
-    } 
-    else 
-    {
-      Get.to(HomeScreen());
+  // Check if user is logged in
+  void checkIfUserIsLoggedIn(BuildContext context) {
+    if (_auth.currentUser == null) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
+    } else {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
     }
   }
 
-  @override
-  void onReady() {
-    super.onReady();
-
-    firebaseCurrentUser = Rx<User?>(FirebaseAuth.instance.currentUser);
-    firebaseCurrentUser.bindStream(FirebaseAuth.instance.authStateChanges());
-
-    ever(firebaseCurrentUser, checkifUserisLoggedIn);
-  }
-
-  signInWithGoogle() {}
-
-  checkUserProfileExists() {}
-
-  storeGoogleUserProfile(String trim, String trim2, String trim3, String trim4, String trim5, String trim6, String trim7) {}
+  // Placeholder methods for Google sign-in, can be filled later
+  void signInWithGoogle() {}
+  void checkUserProfileExists() {}
+  void storeGoogleUserProfile(String trim, String trim2, String trim3, String trim4, String trim5, String trim6, String trim7) {}
 }

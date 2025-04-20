@@ -1,45 +1,15 @@
-// ignore_for_file: deprecated_member_use
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use, depend_on_referenced_packages
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:get/get.dart';
 import 'package:ua_dating_app/authentication/login_screen.dart';
+import 'package:ua_dating_app/providers/user_provider.dart';
 
-class UserDetailsScreen extends StatefulWidget {
+class UserDetailsScreen extends ConsumerWidget {
   const UserDetailsScreen({super.key});
 
-  @override
-  State<UserDetailsScreen> createState() => _UserDetailsScreenState();
-}
-
-class _UserDetailsScreenState extends State<UserDetailsScreen> {
-  late Future<DocumentSnapshot> _userFuture;
-
-  @override
-  void initState() {
-    super.initState();
-    final currentUser = FirebaseAuth.instance.currentUser;
-    _userFuture = FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUser?.uid)
-        .get();
-  }
-
-  Future<void> _logoutUser() async {
-    try {
-      await FirebaseAuth.instance.signOut();
-      Get.offAll(() => const LoginScreen());
-    } catch (e) {
-      Get.snackbar(
-        'Logout Failed',
-        e.toString(),
-        backgroundColor: Colors.redAccent.withOpacity(0.8),
-        colorText: Colors.white,
-      );
-    }
-  }
-
+  // Build user info
   Widget _buildUserInfo(String label, String value) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -70,7 +40,9 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userAsyncValue = ref.watch(userProvider);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("User Profile"),
@@ -79,24 +51,34 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: _logoutUser,
+            onPressed: () async {
+              try {
+                await FirebaseAuth.instance.signOut();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Logout Failed: ${e.toString()}"),
+                    backgroundColor: Colors.redAccent.withOpacity(0.8),
+                  ),
+                );
+              }
+            },
             tooltip: 'Logout',
           ),
         ],
       ),
       backgroundColor: const Color(0xFFF7F7F7),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: _userFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (!snapshot.hasData || !snapshot.data!.exists) {
+      body: userAsyncValue.when(
+        data: (userDoc) {
+          if (!userDoc.exists) {
             return const Center(child: Text("No user data found."));
           }
 
-          final data = snapshot.data!.data() as Map<String, dynamic>;
+          final data = userDoc.data() as Map<String, dynamic>;
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24),
@@ -172,6 +154,8 @@ class _UserDetailsScreenState extends State<UserDetailsScreen> {
             ),
           );
         },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(child: Text('Error: $error')),
       ),
     );
   }

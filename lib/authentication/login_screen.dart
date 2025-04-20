@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
+// ignore: depend_on_referenced_packages
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:ua_dating_app/authentication/registration_screen.dart';
 import 'package:ua_dating_app/controllers/authentication_controller.dart';
-import 'package:ua_dating_app/home_screen.dart';
 import 'package:ua_dating_app/widgets/custom_text_field_widget.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final TextEditingController emailTextEditingController = TextEditingController();
   final TextEditingController passwordTextEditingController = TextEditingController();
-
-  final authController = Get.find<AuthenticationController>();
   bool showProgressBar = false;
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(authControllerProvider); // Access provider here
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Center(
@@ -32,11 +32,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 40),
                 Image.asset('images/logo.png', width: 200),
                 const SizedBox(height: 20),
-                const Text('Welcome',
-                    style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 68, 68, 68))),
+                const Text('Welcome', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 68, 68, 68))),
                 const SizedBox(height: 10),
-                const Text('Please login to find your match',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)),
+                const Text('Please login to find your match', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)),
                 const SizedBox(height: 40),
                 CustomTextFieldWidget(
                   emailTextEditingController,
@@ -99,7 +97,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 20),
                 TextButton(
                   onPressed: () {
-                    Get.to(() => const RegistrationScreen(isGoogleUser: false));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const RegistrationScreen(isGoogleUser: false)),
+                    );
                   },
                   child: const Text(
                     "Don't have an account? Create here",
@@ -114,53 +115,23 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Future<void> _handleEmailPasswordLogin() async {
-    final email = emailTextEditingController.text.trim();
-    final password = passwordTextEditingController.text.trim();
+  void _handleEmailPasswordLogin() async {
+    setState(() {
+      showProgressBar = true;
+    });
 
-    if (email.isEmpty || password.isEmpty) {
-      Get.snackbar(
-        "Missing Information",
-        "Please fill in both email and password.",
-        backgroundColor: Colors.orangeAccent,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-      return;
-    }
+    await ref.read(authControllerProvider).loginUser(
+      context,
+      emailTextEditingController.text,
+      passwordTextEditingController.text,
+    );
 
-    setState(() => showProgressBar = true);
-
-    try {
-      await authController.loginUser(email, password);
-    } catch (e) {
-      Get.snackbar(
-        "Login Failed",
-        e.toString().replaceAll("Exception: ", ""),
-        // ignore: deprecated_member_use
-        backgroundColor: Colors.redAccent.withOpacity(0.9),
-        colorText: Colors.white,
-        snackPosition: SnackPosition.BOTTOM,
-      );
-    } finally {
-      setState(() => showProgressBar = false);
-    }
+    setState(() {
+      showProgressBar = false;
+    });
   }
 
-  Future<void> _handleGoogleSignIn() async {
-    setState(() => showProgressBar = true);
-    try {
-      await authController.signInWithGoogle();
-      bool isProfileExists = await authController.checkUserProfileExists();
-      if (isProfileExists) {
-        Get.offAll(() => const HomeScreen());
-      } else {
-        Get.to(() => const RegistrationScreen(isGoogleUser: true));
-      }
-    } catch (e) {
-      Get.snackbar("Google Sign-In Failed", e.toString(), snackPosition: SnackPosition.BOTTOM);
-    } finally {
-      setState(() => showProgressBar = false);
-    }
+  void _handleGoogleSignIn() {
+    ref.read(authControllerProvider).signInWithGoogle();
   }
 }
