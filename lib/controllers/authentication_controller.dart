@@ -8,7 +8,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:ua_dating_app/authentication/login_screen.dart';
 import 'package:ua_dating_app/home_screen.dart';
 
 // Create a Riverpod provider for AuthenticationController
@@ -171,15 +170,6 @@ class AuthenticationController extends ChangeNotifier {
       duration: const Duration(seconds: 3),
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
-  }
-
-  // Check if user is logged in
-  void checkIfUserIsLoggedIn(BuildContext context) {
-    if (_auth.currentUser == null) {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()));
-    } else {
-      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-    }
   }
 
   // Placeholder methods for Google sign-in, can be filled later

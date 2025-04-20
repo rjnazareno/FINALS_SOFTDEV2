@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 // ignore: depend_on_referenced_packages
-import 'package:flutter_riverpod/flutter_riverpod.dart'; // Import Riverpod
-import 'authentication/login_screen.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
-// Entry point for the app
+import 'authentication/login_screen.dart';
+import 'home_screen.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
@@ -17,15 +19,31 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ProviderScope(  // Wrap the app in ProviderScope
+    return ProviderScope(
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'UA Dating App',
         theme: ThemeData.dark().copyWith(
           scaffoldBackgroundColor: const Color.fromARGB(255, 253, 253, 253),
         ),
-        home: const LoginScreen(),
+        home: const AuthGate(), // 👈 use this instead of LoginScreen
       ),
     );
+  }
+}
+
+// 👇 This widget decides where to navigate based on login state
+class AuthGate extends StatelessWidget {
+  const AuthGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return const LoginScreen(); // Not logged in
+    } else {
+      return const HomeScreen(); // Already logged in
+    }
   }
 }

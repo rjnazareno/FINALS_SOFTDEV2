@@ -1,4 +1,4 @@
-// ignore_for_file: deprecated_member_use, depend_on_referenced_packages
+// ignore_for_file: deprecated_member_use, depend_on_referenced_packages, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +9,8 @@ class SwipingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final profileController = ref.watch(profileControllerProvider.notifier); // Use the notifier
-    final profiles = ref.watch(profileControllerProvider); // Watch the profile list
+    final profileController = ref.watch(profileControllerProvider.notifier);
+    final profiles = ref.watch(profileControllerProvider);
 
     if (profiles.isEmpty) {
       return const Scaffold(
@@ -73,8 +73,8 @@ class SwipingScreen extends ConsumerWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        if ((eachProfileInfo.courseOrStrand ?? '').isNotEmpty)
-                          _infoChip(eachProfileInfo.courseOrStrand!),
+                        if ((eachProfileInfo.lookingForInaPartner ?? '').isNotEmpty)
+                          _infoChip(eachProfileInfo.lookingForInaPartner!),
                         const SizedBox(width: 8),
                         if ((eachProfileInfo.selectedGender ?? '').isNotEmpty)
                           _infoChip(eachProfileInfo.selectedGender!),
@@ -82,28 +82,47 @@ class SwipingScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 32),
 
-                    /// Buttons Row
+                    /// Buttons
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                       children: [
-                        _iconButton('images/back.png', onTap: () {
-                          // Optional: handle skip/back
-                        }),
-                        _iconButton('images/fav.png', onTap: () {
-                          // Optional: handle favorite
-                        }),
-                        _iconButton('images/like.png', onTap: () {
-                          profileController.likeSentAndLikeReceived(
-                            eachProfileInfo.uid ?? '',
-                            eachProfileInfo.name ?? 'Unknown',
-                          );
-
+                        _iconButton('images/back.png', onTap: () async {
+                          await profileController.removeLike(eachProfileInfo.uid ?? '');
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text("You liked ${eachProfileInfo.name}"),
-                              backgroundColor: Colors.green,
+                              content: Text("You disliked ${eachProfileInfo.name}"),
+                              backgroundColor: Colors.redAccent,
                             ),
                           );
+                        }),
+                        _iconButton('images/fav.png', onTap: () {
+                          // Optional: Favorite button logic
+                        }),
+                        _iconButton('images/like.png', onTap: () async {
+                          final alreadyLiked = await profileController
+                              .isAlreadyLiked(eachProfileInfo.uid ?? '');
+
+                          if (!alreadyLiked) {
+                            await profileController.likeSentAndLikeReceived(
+                              eachProfileInfo.uid ?? '',
+                              eachProfileInfo.name ?? 'Unknown',
+                            );
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text("You liked ${eachProfileInfo.name}"),
+                                backgroundColor: Colors.green,
+                              ),
+                            );
+                          } else {
+                            // Already liked — do nothing or notify user
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text("You already liked this user."),
+                                backgroundColor: Colors.blueGrey,
+                              ),
+                            );
+                          }
                         }),
                       ],
                     ),
@@ -137,7 +156,8 @@ class SwipingScreen extends ConsumerWidget {
     );
   }
 
-  Widget _iconButton(String assetPath, {required VoidCallback onTap, double size = 65}) {
+  Widget _iconButton(String assetPath,
+      {required VoidCallback onTap, double size = 65}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(

@@ -15,46 +15,37 @@ class ProfileController extends StateNotifier<List<Person>> {
     _listenToProfiles();
   }
 
-  // Ensure current user is properly fetched and handled
   final String currentUserID = FirebaseAuth.instance.currentUser?.uid ?? "";
 
   void _listenToProfiles() {
     if (currentUserID.isEmpty) {
-      // If the user is not authenticated, don't fetch profiles
       state = [];
       return;
     }
 
-    // Listen to the profiles of other users
     FirebaseFirestore.instance
         .collection("users")
         .where("uid", isNotEqualTo: currentUserID)
         .snapshots()
         .listen((querySnapshot) {
-      final profilesList =
-          querySnapshot.docs.map((doc) => Person.fromDataSnapshot(doc)).toList();
-      state = profilesList; // Update the state with new profiles
+      final profilesList = querySnapshot.docs
+          .map((doc) => Person.fromDataSnapshot(doc))
+          .toList();
+      state = profilesList;
     });
   }
 
-  Future<void> likeSentAndLikeReceived(
-      String toUserID, String senderName) async {
-    if (currentUserID.isEmpty) return; // If the user is not authenticated, do nothing
+  /// Like someone (only if not already liked)
+  Future<void> likeSentAndLikeReceived(String toUserID, String senderName) async {
+    if (currentUserID.isEmpty) return;
 
     final currentUserRef =
         FirebaseFirestore.instance.collection("users").doc(currentUserID);
     final toUserRef = FirebaseFirestore.instance.collection("users").doc(toUserID);
 
-    // Check if the "likeReceived" document exists for the target user
-    final doc =
-        await toUserRef.collection("likeReceived").doc(currentUserID).get();
+    final doc = await currentUserRef.collection("likeSent").doc(toUserID).get();
 
-    if (doc.exists) {
-      // Unlike: remove both "likeReceived" and "likeSent"
-      await toUserRef.collection("likeReceived").doc(currentUserID).delete();
-      await currentUserRef.collection("likeSent").doc(toUserID).delete();
-    } else {
-      // Like: add both "likeReceived" and "likeSent"
+    if (!doc.exists) {
       await toUserRef.collection("likeReceived").doc(currentUserID).set({
         "name": senderName,
         "timestamp": FieldValue.serverTimestamp(),
@@ -64,5 +55,31 @@ class ProfileController extends StateNotifier<List<Person>> {
         "timestamp": FieldValue.serverTimestamp(),
       });
     }
+  }
+
+  /// Dislike/remove a previously liked user
+  Future<void> removeLike(String toUserID) async {
+    if (currentUserID.isEmpty) return;
+
+    final currentUserRef =
+        FirebaseFirestore.instance.collection("users").doc(currentUserID);
+    final toUserRef = FirebaseFirestore.instance.collection("users").doc(toUserID);
+
+    await toUserRef.collection("likeReceived").doc(currentUserID).delete();
+    await currentUserRef.collection("likeSent").doc(toUserID).delete();
+  }
+
+  /// Check if user is already liked
+  Future<bool> isAlreadyLiked(String toUserID) async {
+    if (currentUserID.isEmpty) return false;
+
+    final doc = await FirebaseFirestore.instance
+        .collection("users")
+        .doc(currentUserID)
+        .collection("likeSent")
+        .doc(toUserID)
+        .get();
+
+    return doc.exists;
   }
 }
