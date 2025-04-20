@@ -68,7 +68,6 @@ class SwipingScreen extends ConsumerWidget {
                         fontWeight: FontWeight.w500,
                         color: Colors.white70,
                       ),
-<<<<<<< HEAD
                     ),
                     const SizedBox(height: 16),
                     Row(
@@ -82,29 +81,6 @@ class SwipingScreen extends ConsumerWidget {
                       ],
                     ),
                     const SizedBox(height: 32),
-=======
-                      const SizedBox(height: 8),
-                      Text(
-                        "${eachProfileInfo.age} • ${eachProfileInfo.city ?? 'Unknown'}",
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          if ((eachProfileInfo.lookingForInaPartner ?? '').isNotEmpty)
-                            _infoChip(eachProfileInfo.lookingForInaPartner!),
-                          const SizedBox(width: 8),
-                          if ((eachProfileInfo.selectedGender ?? '').isNotEmpty)
-                            _infoChip(eachProfileInfo.selectedGender!),
-                        ],
-                      ),
-                      const SizedBox(height: 32),
->>>>>>> 667a46568b6ba451c2a22d49978e7759e3e2e4e5
 
                     /// Buttons
                     Row(
