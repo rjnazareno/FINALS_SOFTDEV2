@@ -75,8 +75,8 @@ class _SwipingScreenState extends State<SwipingScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          if ((eachProfileInfo.courseOrStrand ?? '').isNotEmpty)
-                            _infoChip(eachProfileInfo.courseOrStrand!),
+                          if ((eachProfileInfo.lookingForInaPartner ?? '').isNotEmpty)
+                            _infoChip(eachProfileInfo.lookingForInaPartner!),
                           const SizedBox(width: 8),
                           if ((eachProfileInfo.selectedGender ?? '').isNotEmpty)
                             _infoChip(eachProfileInfo.selectedGender!),
