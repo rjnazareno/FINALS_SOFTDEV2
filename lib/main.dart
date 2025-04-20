@@ -26,13 +26,13 @@ class MyApp extends StatelessWidget {
         theme: ThemeData.dark().copyWith(
           scaffoldBackgroundColor: const Color.fromARGB(255, 253, 253, 253),
         ),
-        home: const AuthGate(), // 👈 use this instead of LoginScreen
+        home: const AuthGate(),
       ),
     );
   }
 }
 
-// 👇 This widget decides where to navigate based on login state
+
 class AuthGate extends StatelessWidget {
   const AuthGate({super.key});
 
@@ -41,9 +41,9 @@ class AuthGate extends StatelessWidget {
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
-      return const LoginScreen(); // Not logged in
+      return const LoginScreen(); 
     } else {
-      return const HomeScreen(); // Already logged in
+      return const HomeScreen(); 
     }
   }
 }

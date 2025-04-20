@@ -216,18 +216,30 @@
     }
 
     bool _validateFields() {
-      if (nameController.text.isEmpty ||
-          emailController.text.isEmpty ||
-          (!widget.isGoogleUser && passwordController.text.isEmpty) ||
-          ageController.text.isEmpty ||
-          phoneController.text.isEmpty ||
-          cityController.text.isEmpty ||
-          selectedGender == null ||
-          courseOrStrandController.text.isEmpty ||
-          lookingForController.text.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill in all fields")));
-        return false;
-      }
-      return true;
-    }
+  final authController = ref.read(authControllerProvider);
+
+  if (authController.profileImage == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please upload a profile picture")),
+    );
+    return false;
   }
+
+  if (nameController.text.isEmpty ||
+      emailController.text.isEmpty ||
+      (!widget.isGoogleUser && passwordController.text.isEmpty) ||
+      ageController.text.isEmpty ||
+      phoneController.text.isEmpty ||
+      cityController.text.isEmpty ||
+      selectedGender == null ||
+      courseOrStrandController.text.isEmpty ||
+      lookingForController.text.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please fill in all fields")),
+    );
+    return false;
+  }
+
+  return true;
+}
+}
