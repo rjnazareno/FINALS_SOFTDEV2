@@ -99,7 +99,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => const RegistrationScreen(isGoogleUser: false)),
+                      MaterialPageRoute(builder: (context) => const RegistrationScreen(isGoogleUser: false, email: '',)),
                     );
                   },
                   child: const Text(
@@ -132,6 +132,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _handleGoogleSignIn() {
-    ref.read(authControllerProvider).signInWithGoogle();
+    ref.read(authControllerProvider).signInWithGoogle(context); // ✅ Pass context
   }
 }

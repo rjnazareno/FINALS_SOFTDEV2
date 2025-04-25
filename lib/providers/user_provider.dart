@@ -3,15 +3,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-// Provider for user data
+/// A Riverpod [FutureProvider] that fetches the currently logged-in user's document
 final userProvider = FutureProvider<DocumentSnapshot>((ref) async {
   final currentUser = FirebaseAuth.instance.currentUser;
+
   if (currentUser == null) {
-    throw Exception("No user logged in");
+    throw Exception("No user is currently logged in");
   }
+
   final userDoc = await FirebaseFirestore.instance
       .collection('users')
       .doc(currentUser.uid)
       .get();
+
   return userDoc;
 });
