@@ -3,9 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:ua_dating_app/providers/user_provider.dart';
 import 'package:ua_dating_app/authentication/login_screen.dart';
-import 'package:ua_dating_app/tabScreens/settings_screen.dart';
+import 'package:ua_dating_app/providers/user_provider.dart';
 
 class UserDetailsScreen extends ConsumerWidget {
   const UserDetailsScreen({super.key});
@@ -20,14 +19,19 @@ class UserDetailsScreen extends ConsumerWidget {
           Text(
             "$label: ",
             style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              fontSize: 17,
+              color: Color.fromARGB(255, 51, 51, 51),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(fontSize: 16),
+              style: const TextStyle(
+                fontSize: 17,
+                color: Colors.black87,
+                height: 1.4, // better line height for readability
+              ),
             ),
           ),
         ],
@@ -44,55 +48,108 @@ class UserDetailsScreen extends ConsumerWidget {
         title: const Text("User Profile"),
         backgroundColor: Colors.redAccent,
         elevation: 0,
-        automaticallyImplyLeading: false, // Removes the back arrow
         actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.menu), // 3-bar menu icon
-            onSelected: (value) async {
-              if (value == 'logout') {
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+              try {
                 await FirebaseAuth.instance.signOut();
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
                 );
-              } else if (value == 'settings') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Logout Failed: ${e.toString()}"),
+                    backgroundColor: Colors.redAccent.withOpacity(0.8),
+                  ),
                 );
               }
             },
-            itemBuilder: (BuildContext context) {
-              return [
-                const PopupMenuItem(
-                  value: 'settings',
-                  child: Text('Settings'),
-                ),
-                const PopupMenuItem(
-                  value: 'logout',
-                  child: Text('Log Out'),
-                ),
-              ];
-            },
+            tooltip: 'Logout',
           ),
         ],
       ),
       backgroundColor: const Color(0xFFF7F7F7),
       body: userAsyncValue.when(
         data: (userDoc) {
-          final userData = userDoc.data() as Map<String, dynamic>;
-          return Padding(
-            padding: const EdgeInsets.all(16.0),
+          if (!userDoc.exists) {
+            return const Center(child: Text("No user data found."));
+          }
+
+          final data = userDoc.data() as Map<String, dynamic>;
+
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _buildUserInfo("Name", userData["name"] ?? "N/A"),
-                _buildUserInfo("Email", userData["email"] ?? "N/A"),
-                _buildUserInfo("Age", userData["age"] ?? "N/A"),
-                _buildUserInfo("City", userData["city"] ?? "N/A"),
-                _buildUserInfo("Gender", userData["gender"] ?? "N/A"),
-                _buildUserInfo("Course/Strand", userData["courseOrStrand"] ?? "N/A"),
-                _buildUserInfo("Looking For", userData["lookingForInaPartner"] ?? "N/A"),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: data['imageProfile'] != null &&
+                          data['imageProfile'].toString().isNotEmpty
+                      ? Image.network(
+                          data['imageProfile'],
+                          height: 180,
+                          width: 180,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          height: 180,
+                          width: 180,
+                          color: Colors.grey[300],
+                          child: const Icon(
+                            Icons.person,
+                            size: 80,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 30),
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    "Personal Info",
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color.fromARGB(255, 51, 51, 51),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Divider(thickness: 1.5, color: Colors.black26),
+                const SizedBox(height: 16),
+
+                // Info card container
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildUserInfo("Name", data['name'] ?? "N/A"),
+                      _buildUserInfo("Age", data['age'] ?? "N/A"),
+                      _buildUserInfo("Phone", data['phoneNo'] ?? "N/A"),
+                      _buildUserInfo("City", data['city'] ?? "N/A"),
+                      _buildUserInfo("Gender", data['courseOrStrand'] ?? "N/A"),
+                      _buildUserInfo("Course/Strand", data['lookingForInaPartner'] ?? "N/A"),
+                      _buildUserInfo("Looking For", data['gender'] ?? "N/A"),
+                      _buildUserInfo("Email", data['email'] ?? "N/A"),
+                    ],
+                  ),
+                ),
               ],
             ),
           );
