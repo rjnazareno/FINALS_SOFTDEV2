@@ -50,6 +50,8 @@ class Person {
     );
   }
 
+  get jobTitle => null;
+
   Map<String, dynamic> toJson() {
     return {
       "uid": uid,
@@ -67,4 +69,27 @@ class Person {
       "publishedTime": publishedTime,
     };
   }
+
+  static Person fromDocument(DocumentSnapshot<Map<String, dynamic>> userDoc) {
+    if (userDoc.data() == null) {
+      throw Exception("Document data is null");
+    }
+    var data = userDoc.data()!;
+    return Person(
+      uid: data["uid"],
+      name: data["name"],
+      age: data["age"],
+      email: data["email"],
+      password: data["password"],
+      phoneNo: data["phoneNo"],
+      city: data["city"],
+      selectedGender: data["gender"],
+      profileHeading: data["profileHeading"],
+      courseOrStrand: data["courseOrStrand"],
+      lookingForInaPartner: data["lookingForInaPartner"],
+      publishedTime: data["publishedTime"],
+      imageProfile: data["imageProfile"],
+    );
+  }
+
 }

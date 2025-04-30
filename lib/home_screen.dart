@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:ua_dating_app/tabScreens/favorite_sent_favorite_received_screen.dart';
 import 'package:ua_dating_app/tabScreens/like_sent_like_received_screen.dart';
+import 'package:ua_dating_app/tabScreens/match_screen.dart';
 import 'package:ua_dating_app/tabScreens/swiping_screen.dart';
 import 'package:ua_dating_app/tabScreens/user_details_screen.dart';
-import 'package:ua_dating_app/tabScreens/view_sent_view_received_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,8 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final List<Widget> tabScreensList = [
     SwipingScreen(),
-    ViewSentViewReceivedScreen(),
-    FavoriteSentFavoriteReceivedScreen(),
+    MatchScreen(),
     LikeSentLikeReceivedScreen(),
     UserDetailsScreen(),
   ];
@@ -40,11 +39,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),
-            label: 'Swipe',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.remove_red_eye),
-            label: 'Views',
+            label: 'Swipe',                   
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat),

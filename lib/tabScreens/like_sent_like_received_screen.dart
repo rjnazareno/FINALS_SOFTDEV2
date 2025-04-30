@@ -6,58 +6,82 @@ class LikeSentLikeReceivedScreen extends StatefulWidget {
   const LikeSentLikeReceivedScreen({super.key});
 
   @override
-  State<LikeSentLikeReceivedScreen> createState() =>
-      _LikeSentLikeReceivedScreenState();
+  State<LikeSentLikeReceivedScreen> createState() => _LikeSentLikeReceivedScreenState();
 }
 
-class _LikeSentLikeReceivedScreenState
-    extends State<LikeSentLikeReceivedScreen> {
+class _LikeSentLikeReceivedScreenState extends State<LikeSentLikeReceivedScreen> {
   bool showSent = true;
   final String currentUserID = FirebaseAuth.instance.currentUser?.uid ?? "";
+
+  void _confirmDelete(String likedUserID) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Remove Like"),
+        content: const Text("Are you sure you want to remove this like?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete == true) {
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(currentUserID)
+          .collection(showSent ? "likeSent" : "likeReceived")
+          .doc(likedUserID)
+          .delete();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.redAccent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            GestureDetector(
-              onTap: () => setState(() => showSent = true),
-              child: Text(
-                "My Likes",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: showSent ? Colors.white : Colors.white70,
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Text(
-              "|",
-              style: TextStyle(fontSize: 18, color: Colors.white),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => setState(() => showSent = false),
-              child: Text(
-                "Liked Me",
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: !showSent ? Colors.white : Colors.white70,
-                ),
-              ),
-            ),
-          ],
+     appBar: AppBar(
+  backgroundColor: Colors.white,
+  elevation: 0,
+  automaticallyImplyLeading: false,
+  centerTitle: true,
+  title: Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      GestureDetector(
+        onTap: () => setState(() => showSent = true),
+        child: Text(
+          "My Likes",
+          style: TextStyle(
+            fontSize: 18, // ← slightly bigger
+            fontWeight: FontWeight.bold,
+            color: showSent ? Colors.black : Colors.black45,
+          ),
         ),
       ),
+      const SizedBox(width: 8),
+      const Text("|", style: TextStyle(fontSize: 18, color: Colors.black54)),
+      const SizedBox(width: 8),
+      GestureDetector(
+        onTap: () => setState(() => showSent = false),
+        child: Text(
+          "Liked Me",
+          style: TextStyle(
+            fontSize: 18, // ← slightly bigger
+            fontWeight: FontWeight.bold,
+            color: !showSent ? Colors.black : Colors.black45,
+          ),
+        ),
+      ),
+    ],
+  ),
+),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection("users")
@@ -73,9 +97,7 @@ class _LikeSentLikeReceivedScreenState
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return Center(
               child: Text(
-                showSent
-                    ? "You haven't liked anyone yet."
-                    : "No one liked you yet.",
+                showSent ? "You haven't liked anyone yet." : "No one liked you yet.",
                 style: const TextStyle(fontSize: 18, color: Colors.grey),
               ),
             );
@@ -91,7 +113,7 @@ class _LikeSentLikeReceivedScreenState
                 crossAxisCount: 2,
                 mainAxisSpacing: 12,
                 crossAxisSpacing: 12,
-                childAspectRatio: 2.6 / 4, // slightly taller to prevent overflow
+                childAspectRatio: 2.6 / 4,
               ),
               itemBuilder: (context, index) {
                 final likeDoc = likesList[index];
@@ -103,13 +125,11 @@ class _LikeSentLikeReceivedScreenState
                       .doc(likedUserID)
                       .get(),
                   builder: (context, userSnapshot) {
-                    if (!userSnapshot.hasData ||
-                        !userSnapshot.data!.exists) {
+                    if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
                       return const SizedBox();
                     }
 
-                    final userData =
-                        userSnapshot.data!.data() as Map<String, dynamic>;
+                    final userData = userSnapshot.data!.data() as Map<String, dynamic>;
 
                     return Container(
                       decoration: BoxDecoration(
@@ -130,40 +150,54 @@ class _LikeSentLikeReceivedScreenState
                             flex: 3,
                             child: ClipRRect(
                               borderRadius: const BorderRadius.vertical(
-                                  top: Radius.circular(16)),
+                                top: Radius.circular(16),
+                              ),
                               child: Image.network(
                                 userData["imageProfile"] ?? '',
                                 fit: BoxFit.cover,
                                 width: double.infinity,
-                                errorBuilder: (_, __, ___) =>
-                                    const Icon(Icons.error),
+                                errorBuilder: (_, __, ___) => const Icon(Icons.error),
                               ),
                             ),
                           ),
                           Padding(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 6),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
+                            padding: const EdgeInsets.all(8.0),
+                            child: Row(
                               children: [
-                                Text(
-                                  userData["name"] ?? "Unknown",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 15,
-                                  color: Color.fromARGB(255, 68, 68, 68),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        userData["name"] ?? "Unknown",
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 15,
+                                          color: Color.fromARGB(255, 68, 68, 68),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        userData["city"] ?? "",
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          color: Colors.black54,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  userData["city"] ?? "",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    color: Colors.black54,
+                                IconButton(
+                                  onPressed: () => _confirmDelete(likedUserID),
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.redAccent,
+                                    size: 24,
                                   ),
                                 ),
                               ],
