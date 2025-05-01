@@ -52,6 +52,8 @@ class Person {
 
   get jobTitle => null;
 
+  get gender => null;
+
   Map<String, dynamic> toJson() {
     return {
       "uid": uid,

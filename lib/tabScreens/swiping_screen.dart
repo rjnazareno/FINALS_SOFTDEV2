@@ -18,154 +18,182 @@ class _SwipingScreenState extends ConsumerState<SwipingScreen> {
     final profileController = ref.watch(profileControllerProvider.notifier);
     final profiles = ref.watch(profileControllerProvider);
 
-    if (profiles.isEmpty) {
-      return const Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(child: Text("No profiles found.")),
-      );
-    }
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16.0),
-              child: Column(
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Discover',
-                    style: TextStyle(
-                      fontSize: 26,
-                      fontWeight: FontWeight.bold,
+                    Padding(
+  padding: const EdgeInsets.symmetric(vertical: 5.0), // Increased vertical space for the entire Row
+  child: Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 25.0), // More horizontal padding on the left
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Discover',
+              style: TextStyle(
+                fontSize: 26,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
+            SizedBox(height: 4), // More space between the two texts
+            Text(
+              'UA',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey,
+              ),
+            ),
+          ],
+        ),
+      ),
+
+    ],
+  ),
+),
+                  IconButton(
+                    icon: const Icon(
+                      Icons.filter_list,
                       color: Colors.black,
                     ),
-                  ),
-                  Text(
-                    'UA',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
-                    ),
+                    onPressed: () {
+                      _showFilterBottomSheet(context);
+                    },
                   ),
                 ],
               ),
             ),
             Expanded(
               child: Center(
-                child: TinderSwapCard(
-                  orientation: AmassOrientation.bottom,
-                  totalNum: profiles.length,
-                  stackNum: 3,
-                  swipeEdge: 4.0,
-                  maxWidth: MediaQuery.of(context).size.width * 0.95,
-                  maxHeight: MediaQuery.of(context).size.height * 0.65,
-                  minWidth: MediaQuery.of(context).size.width * 0.85,
-                  minHeight: MediaQuery.of(context).size.height * 0.55,
-                  cardBuilder: (context, index) {
-                    final profile = profiles[index];
-                    return ClipRRect(
-                      borderRadius: BorderRadius.circular(24),
-                      child: Stack(
-                        children: [
-                          Positioned.fill(
-                            child: Image.network(
-                              profile.imageProfile ?? '',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  const Center(child: Icon(Icons.error)),
-                            ),
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  Colors.transparent,
-                                  Colors.black.withOpacity(0.7),
-                                ],
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                              ),
-                            ),
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                child: profiles.isEmpty
+                    ? const Center(child: Text("No profiles found."))
+                    : TinderSwapCard(
+                        orientation: AmassOrientation.bottom,
+                        totalNum: profiles.length,
+                        stackNum: 3,
+                        swipeEdge: 4.0,
+                        maxWidth: MediaQuery.of(context).size.width * 0.95,
+                        maxHeight: MediaQuery.of(context).size.height * 0.65,
+                        minWidth: MediaQuery.of(context).size.width * 0.85,
+                        minHeight: MediaQuery.of(context).size.height * 0.55,
+                        cardBuilder: (context, index) {
+                          final profile = profiles[index];
+                          return ClipRRect(
+                            borderRadius: BorderRadius.circular(24),
+                            child: Stack(
                               children: [
-                                Text(
-                                  profile.name ?? "Unknown",
-                                  style: const TextStyle(
-                                    fontSize: 28,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+                                Positioned.fill(
+                                  child: Image.network(
+                                    profile.imageProfile ?? '',
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) =>
+                                        const Center(child: Icon(Icons.error)),
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  "${profile.age} • ${profile.city ?? 'Unknown'}",
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.white70,
+                                Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [
+                                        Colors.transparent,
+                                        Colors.black.withOpacity(0.7),
+                                      ],
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 16),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if ((profile.lookingForInaPartner ?? '').isNotEmpty)
-                                      _infoChip(profile.lookingForInaPartner!),
-                                    const SizedBox(width: 8),
-                                    if ((profile.selectedGender ?? '').isNotEmpty)
-                                      _infoChip(profile.selectedGender!),
-                                  ],
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        profile.name ?? "Unknown",
+                                        style: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        "${profile.age} • ${profile.city ?? 'Unknown'}",
+                                        style: const TextStyle(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white70,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          if ((profile.lookingForInaPartner ?? '').isNotEmpty)
+                                            _infoChip(profile.lookingForInaPartner!),
+                                          const SizedBox(width: 8),
+                                          if ((profile.selectedGender ?? '').isNotEmpty)
+                                            _infoChip(profile.selectedGender!),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                  swipeUpdateCallback: (DragUpdateDetails details, Alignment align) {},
-                  swipeCompleteCallback: (CardSwipeOrientation orientation, int index) async {
-                    final swipedProfile = profiles[index];
+                          );
+                        },
+                        swipeUpdateCallback: (DragUpdateDetails details, Alignment align) {},
+                        swipeCompleteCallback: (CardSwipeOrientation orientation, int index) async {
+                          final swipedProfile = profiles[index];
 
-                    if (orientation == CardSwipeOrientation.right) {
-                      final alreadyLiked = await profileController
-                          .isAlreadyLiked(swipedProfile.uid ?? '');
-                      if (!alreadyLiked) {
-                        await profileController.likeSentAndLikeReceived(
-                          swipedProfile.uid ?? '',
-                          swipedProfile.name ?? 'Unknown',
-                        );
-                      }
-                    } else if (orientation == CardSwipeOrientation.left) {
-                      await profileController.dislikeUser(swipedProfile.uid ?? '');
-                    }
-                  },
-                ),
+                          if (orientation == CardSwipeOrientation.right) {
+                            final alreadyLiked = await profileController
+                                .isAlreadyLiked(swipedProfile.uid ?? '');
+                            if (!alreadyLiked) {
+                              await profileController.likeSentAndLikeReceived(
+                                swipedProfile.uid ?? '',
+                                swipedProfile.name ?? 'Unknown',
+                              );
+                            }
+                          } else if (orientation == CardSwipeOrientation.left) {
+                            await profileController.dislikeUser(swipedProfile.uid ?? '');
+                          }
+                        },
+                      ),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 _iconButton('images/back.png', size: 60, onTap: () async {
-                  final profile = profiles[0];
-                  await profileController.dislikeUser(profile.uid ?? '');
+                  final profile = profiles.isNotEmpty ? profiles[0] : null;
+                  if (profile != null) {
+                    await profileController.dislikeUser(profile.uid ?? '');
+                  }
                 }),
                 const SizedBox(width: 16),
                 _iconButton('images/like.png', size: 90, onTap: () async {
-                  final profile = profiles[0];
-                  final alreadyLiked = await profileController
-                      .isAlreadyLiked(profile.uid ?? '');
+                  final profile = profiles.isNotEmpty ? profiles[0] : null;
+                  if (profile != null) {
+                    final alreadyLiked = await profileController
+                        .isAlreadyLiked(profile.uid ?? '');
 
-                  if (!alreadyLiked) {
-                    await profileController.likeSentAndLikeReceived(
-                      profile.uid ?? '',
-                      profile.name ?? 'Unknown',
-                    );
+                    if (!alreadyLiked) {
+                      await profileController.likeSentAndLikeReceived(
+                        profile.uid ?? '',
+                        profile.name ?? 'Unknown',
+                      );
+                    }
                   }
                 }),
                 const SizedBox(width: 16),
@@ -182,10 +210,54 @@ class _SwipingScreenState extends ConsumerState<SwipingScreen> {
                 }),
               ],
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
           ],
         ),
       ),
+    );
+  }
+
+  void _showFilterBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Filter by Gender',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              ListTile(
+                title: const Text('All'),
+                onTap: () {
+                  ref.read(profileControllerProvider.notifier).setGenderFilter(null);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: const Text('Male'),
+                onTap: () {
+                  ref.read(profileControllerProvider.notifier).setGenderFilter('Male');
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                title: const Text('Female'),
+                onTap: () {
+                  ref.read(profileControllerProvider.notifier).setGenderFilter('Female');
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -207,8 +279,7 @@ class _SwipingScreenState extends ConsumerState<SwipingScreen> {
     );
   }
 
-  Widget _iconButton(String assetPath,
-      {required VoidCallback onTap, double size = 65}) {
+  Widget _iconButton(String assetPath, {required VoidCallback onTap, double size = 65}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(

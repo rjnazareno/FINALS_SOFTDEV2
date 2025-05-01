@@ -20,6 +20,11 @@ class ProfileController extends StateNotifier<List<Person>> {
   List<Person> _allProfiles = [];
   List<Person> temporarilyDislikedProfiles = [];
 
+  String? genderFilter;
+  int? minAgeFilter;
+  int? maxAgeFilter;
+  String? cityFilter;
+
   void _init() {
     if (currentUserID.isEmpty) {
       state = [];
@@ -58,42 +63,66 @@ class ProfileController extends StateNotifier<List<Person>> {
     });
   }
 
-  // Check if a match is ongoing between the current user and the given user
-  Future<bool> isMatchOngoing(String userId) async {
-    final currentUserId = currentUserID;
+  // Set gender filter: "Male", "Female", or null for all
+  void setGenderFilter(String? gender) {
+    genderFilter = gender;
+    _filterProfiles();
+  }
 
-    // Check if the current user has matched with this user
+  void setAgeFilter(int? minAge, int? maxAge) {
+    minAgeFilter = minAge;
+    maxAgeFilter = maxAge;
+    _filterProfiles();
+  }
+
+  void setCityFilter(String? city) {
+    cityFilter = city;
+    _filterProfiles();
+  }
+
+  Future<void> _filterProfiles() async {
+    final filtered = await Future.wait(_allProfiles.map((person) async {
+      final uid = person.uid;
+      final matchesGender = genderFilter == null ||
+          genderFilter?.toLowerCase() == person.selectedGender?.toLowerCase();
+
+      final matchesAge = (minAgeFilter == null || ((person.age as int?) ?? 0) >= minAgeFilter!) &&
+          (maxAgeFilter == null || ((person.age as int?) ?? 100) <= maxAgeFilter!);
+
+      final matchesCity = cityFilter == null ||
+          cityFilter!.toLowerCase() == person.city?.toLowerCase();
+
+      if (uid != null &&
+          !dislikedIds.contains(uid) &&
+          !likedIds.contains(uid) &&
+          !await isMatchOngoing(uid) &&
+          matchesGender &&
+          matchesAge &&
+          matchesCity) {
+        return person;
+      }
+      return null;
+    }));
+
+    state = filtered.whereType<Person>().toList();
+  }
+
+  Future<bool> isMatchOngoing(String userId) async {
     final match1 = await FirebaseFirestore.instance
         .collection("users")
-        .doc(currentUserId)
+        .doc(currentUserID)
         .collection("matches")
         .doc(userId)
         .get();
 
-    // Check if the other user has matched with the current user
     final match2 = await FirebaseFirestore.instance
         .collection("users")
         .doc(userId)
         .collection("matches")
-        .doc(currentUserId)
+        .doc(currentUserID)
         .get();
 
-    return match1.exists || match2.exists; // Return true if a match exists
-  }
-
-  void _filterProfiles() async {
-    final filtered = await Future.wait(_allProfiles.map((person) async {
-      final uid = person.uid;
-      if (uid != null &&
-          !dislikedIds.contains(uid) &&
-          !likedIds.contains(uid) &&
-          !await isMatchOngoing(uid)) {
-        return person; // Only include the profile if it's not matched or disliked/liked
-      }
-      return null; // Exclude the profile if matched, disliked, or liked
-    }));
-
-    state = filtered.whereType<Person>().toList(); // Filter out null values (excluded profiles)
+    return match1.exists || match2.exists;
   }
 
   Future<void> likeSentAndLikeReceived(String toUserID, String senderName) async {
@@ -129,7 +158,6 @@ class ProfileController extends StateNotifier<List<Person>> {
           "timestamp": FieldValue.serverTimestamp(),
         });
 
-        // 💥 Remove likes from both sides
         await removeLikesBetween(currentUserID, toUserID);
       }
     }
@@ -149,7 +177,8 @@ class ProfileController extends StateNotifier<List<Person>> {
       "timestamp": FieldValue.serverTimestamp(),
     });
 
-    final profile = _allProfiles.firstWhere((p) => p.uid == toUserID, orElse: () => Person(uid: null));
+    final profile =
+        _allProfiles.firstWhere((p) => p.uid == toUserID, orElse: () => Person(uid: null));
     temporarilyDislikedProfiles.add(profile);
 
     _removeProfileLocally(toUserID);
