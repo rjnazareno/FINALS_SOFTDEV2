@@ -145,7 +145,9 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
           const SizedBox(height: 6),
           Text(
             person.name ?? '',
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+      
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black,),
+            
             overflow: TextOverflow.ellipsis,
           ),
         ],

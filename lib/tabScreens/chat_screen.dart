@@ -117,8 +117,29 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.person.name ?? 'Chat'),
+  backgroundColor: Colors.white,
+  elevation: 1,
+  iconTheme: const IconThemeData(color: Colors.black),
+  title: Row(
+    children: [
+      CircleAvatar(
+        radius: 20,
+        backgroundImage: widget.person.imageProfile != null
+            ? NetworkImage(widget.person.imageProfile!)
+            : const AssetImage('images/placeholder.png') as ImageProvider,
       ),
+      const SizedBox(width: 12),
+      Text(
+        widget.person.name ?? 'Chat',
+        style: const TextStyle(
+          color: Colors.black,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ],
+  ),
+),
       body: Column(
         children: [
           Expanded(
