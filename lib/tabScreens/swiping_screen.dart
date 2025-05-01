@@ -139,25 +139,9 @@ class _SwipingScreenState extends ConsumerState<SwipingScreen> {
                           swipedProfile.uid ?? '',
                           swipedProfile.name ?? 'Unknown',
                         );
-                        if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("You liked ${swipedProfile.name}"),
-                              backgroundColor: Colors.green,
-                            ),
-                          );
-                        }
                       }
                     } else if (orientation == CardSwipeOrientation.left) {
                       await profileController.dislikeUser(swipedProfile.uid ?? '');
-                      if (mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text("You disliked ${swipedProfile.name}"),
-                            backgroundColor: Colors.redAccent,
-                          ),
-                        );
-                      }
                     }
                   },
                 ),
@@ -170,14 +154,6 @@ class _SwipingScreenState extends ConsumerState<SwipingScreen> {
                 _iconButton('images/back.png', size: 60, onTap: () async {
                   final profile = profiles[0];
                   await profileController.dislikeUser(profile.uid ?? '');
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text("You disliked ${profile.name}"),
-                        backgroundColor: Colors.redAccent,
-                      ),
-                    );
-                  }
                 }),
                 const SizedBox(width: 16),
                 _iconButton('images/like.png', size: 90, onTap: () async {
@@ -190,23 +166,6 @@ class _SwipingScreenState extends ConsumerState<SwipingScreen> {
                       profile.uid ?? '',
                       profile.name ?? 'Unknown',
                     );
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text("You liked ${profile.name}"),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
-                    }
-                  } else {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text("You already liked this user."),
-                          backgroundColor: Colors.blueGrey,
-                        ),
-                      );
-                    }
                   }
                 }),
                 const SizedBox(width: 16),
