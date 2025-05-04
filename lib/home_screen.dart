@@ -1,30 +1,83 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:ua_dating_app/tabScreens/like_sent_like_received_screen.dart';
 import 'package:ua_dating_app/tabScreens/match_screen.dart';
 import 'package:ua_dating_app/tabScreens/swiping_screen.dart';
 import 'package:ua_dating_app/tabScreens/user_details_screen.dart';
+import 'package:ua_dating_app/authentication/login_screen.dart';
+import 'package:ua_dating_app/providers/user_provider.dart';
 
-
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   int screenIndex = 0;
 
   final List<Widget> tabScreensList = [
-    SwipingScreen(),
-    MatchScreen(),
-    LikeSentLikeReceivedScreen(),
-    UserDetailsScreen(),
+    const SwipingScreen(),
+    const MatchScreen(),
+    const LikeSentLikeReceivedScreen(),
+    const UserDetailsScreen(), // Profile tab
   ];
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirm Logout"),
+        content: const Text("Are you sure you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Logout", style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await FirebaseAuth.instance.signOut();
+      ref.invalidate(userProvider);
+      // ignore: use_build_context_synchronously
+      Navigator.pushAndRemoveUntil(
+        // ignore: use_build_context_synchronously
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: screenIndex == 3
+          ? AppBar(
+              backgroundColor: Colors.white,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              title: const Text(
+                "About Me",
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 22),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.logout, color: Colors.redAccent),
+                  onPressed: () => _confirmLogout(context),
+                ),
+              ],
+            )
+          : null,
       body: tabScreensList[screenIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: screenIndex,
@@ -39,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite),
-            label: 'Swipe',                   
+            label: 'Swipe',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.chat),

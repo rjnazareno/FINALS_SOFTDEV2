@@ -1,19 +1,22 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:ua_dating_app/main.dart';
 import 'package:ua_dating_app/models/person.dart';
 
-final profileControllerProvider =
-    StateNotifierProvider<ProfileController, List<Person>>((ref) {
-  return ProfileController();
+final profileControllerProvider = StateNotifierProvider<ProfileController, List<Person>>((ref) {
+  final authUser = ref.watch(firebaseAuthProvider).value;
+  return ProfileController(authUser?.uid, ref);
 });
 
 class ProfileController extends StateNotifier<List<Person>> {
-  ProfileController() : super([]) {
-    _init();
-  }
+  final Ref ref;
+  String? currentUserID;
 
-  final String currentUserID = FirebaseAuth.instance.currentUser?.uid ?? "";
+  ProfileController(this.currentUserID, this.ref) : super([]) {
+    if (currentUserID != null) _init();
+  }
 
   Set<String> dislikedIds = {};
   Set<String> likedIds = {};
@@ -25,45 +28,55 @@ class ProfileController extends StateNotifier<List<Person>> {
   int? maxAgeFilter;
   String? cityFilter;
 
+  final List<StreamSubscription> _subscriptions = [];
+
   void _init() {
-    if (currentUserID.isEmpty) {
-      state = [];
-      return;
-    }
+    _subscriptions.add(
+      FirebaseFirestore.instance
+          .collection("users")
+          .doc(currentUserID)
+          .collection("disliked")
+          .snapshots()
+          .listen((snapshot) {
+        dislikedIds = snapshot.docs.map((doc) => doc.id).toSet();
+        _filterProfiles();
+      }),
+    );
 
-    FirebaseFirestore.instance
-        .collection("users")
-        .doc(currentUserID)
-        .collection("disliked")
-        .snapshots()
-        .listen((snapshot) {
-      dislikedIds = snapshot.docs.map((doc) => doc.id).toSet();
-      _filterProfiles();
-    });
+    _subscriptions.add(
+      FirebaseFirestore.instance
+          .collection("users")
+          .doc(currentUserID)
+          .collection("likeSent")
+          .snapshots()
+          .listen((snapshot) {
+        likedIds = snapshot.docs.map((doc) => doc.id).toSet();
+        _filterProfiles();
+      }),
+    );
 
-    FirebaseFirestore.instance
-        .collection("users")
-        .doc(currentUserID)
-        .collection("likeSent")
-        .snapshots()
-        .listen((snapshot) {
-      likedIds = snapshot.docs.map((doc) => doc.id).toSet();
-      _filterProfiles();
-    });
-
-    FirebaseFirestore.instance
-        .collection("users")
-        .where("uid", isNotEqualTo: currentUserID)
-        .snapshots()
-        .listen((querySnapshot) {
-      _allProfiles = querySnapshot.docs
-          .map((doc) => Person.fromDataSnapshot(doc))
-          .toList();
-      _filterProfiles();
-    });
+    _subscriptions.add(
+      FirebaseFirestore.instance
+          .collection("users")
+          .where("uid", isNotEqualTo: currentUserID)
+          .snapshots()
+          .listen((querySnapshot) {
+        _allProfiles = querySnapshot.docs
+            .map((doc) => Person.fromDataSnapshot(doc))
+            .toList();
+        _filterProfiles();
+      }),
+    );
   }
 
-  // Set gender filter: "Male", "Female", or null for all
+  @override
+  void dispose() {
+    for (var sub in _subscriptions) {
+      sub.cancel();
+    }
+    super.dispose();
+  }
+
   void setGenderFilter(String? gender) {
     genderFilter = gender;
     _filterProfiles();
@@ -85,10 +98,8 @@ class ProfileController extends StateNotifier<List<Person>> {
       final uid = person.uid;
       final matchesGender = genderFilter == null ||
           genderFilter?.toLowerCase() == person.selectedGender?.toLowerCase();
-
       final matchesAge = (minAgeFilter == null || ((person.age as int?) ?? 0) >= minAgeFilter!) &&
           (maxAgeFilter == null || ((person.age as int?) ?? 100) <= maxAgeFilter!);
-
       final matchesCity = cityFilter == null ||
           cityFilter!.toLowerCase() == person.city?.toLowerCase();
 
@@ -126,12 +137,10 @@ class ProfileController extends StateNotifier<List<Person>> {
   }
 
   Future<void> likeSentAndLikeReceived(String toUserID, String senderName) async {
-    if (currentUserID.isEmpty) return;
+    if (currentUserID == null) return;
 
-    final currentUserRef =
-        FirebaseFirestore.instance.collection("users").doc(currentUserID);
-    final toUserRef =
-        FirebaseFirestore.instance.collection("users").doc(toUserID);
+    final currentUserRef = FirebaseFirestore.instance.collection("users").doc(currentUserID);
+    final toUserRef = FirebaseFirestore.instance.collection("users").doc(toUserID);
 
     final alreadyLiked = await isAlreadyLiked(toUserID);
 
@@ -145,10 +154,8 @@ class ProfileController extends StateNotifier<List<Person>> {
         "timestamp": FieldValue.serverTimestamp(),
       });
 
-      final receivedLikeDoc = await currentUserRef
-          .collection("likeReceived")
-          .doc(toUserID)
-          .get();
+      final receivedLikeDoc =
+          await currentUserRef.collection("likeReceived").doc(toUserID).get();
 
       if (receivedLikeDoc.exists) {
         await currentUserRef.collection("matches").doc(toUserID).set({
@@ -158,7 +165,7 @@ class ProfileController extends StateNotifier<List<Person>> {
           "timestamp": FieldValue.serverTimestamp(),
         });
 
-        await removeLikesBetween(currentUserID, toUserID);
+        await removeLikesBetween(currentUserID!, toUserID);
       }
     }
 
@@ -166,7 +173,7 @@ class ProfileController extends StateNotifier<List<Person>> {
   }
 
   Future<void> dislikeUser(String toUserID) async {
-    if (currentUserID.isEmpty) return;
+    if (currentUserID == null) return;
 
     await FirebaseFirestore.instance
         .collection("users")
@@ -185,11 +192,10 @@ class ProfileController extends StateNotifier<List<Person>> {
   }
 
   Future<void> restoreLastDislikedProfile() async {
-    if (temporarilyDislikedProfiles.isEmpty || currentUserID.isEmpty) return;
+    if (temporarilyDislikedProfiles.isEmpty || currentUserID == null) return;
 
     final lastDisliked = temporarilyDislikedProfiles.removeLast();
     final restoredUid = lastDisliked.uid;
-
     if (restoredUid == null) return;
 
     await FirebaseFirestore.instance
@@ -203,7 +209,7 @@ class ProfileController extends StateNotifier<List<Person>> {
   }
 
   Future<bool> isAlreadyLiked(String toUserID) async {
-    if (currentUserID.isEmpty) return false;
+    if (currentUserID == null) return false;
 
     final doc = await FirebaseFirestore.instance
         .collection("users")
@@ -216,7 +222,7 @@ class ProfileController extends StateNotifier<List<Person>> {
   }
 
   Future<List<Person>> getMatchedUsers() async {
-    if (currentUserID.isEmpty) return [];
+    if (currentUserID == null) return [];
 
     final matchesSnapshot = await FirebaseFirestore.instance
         .collection("users")
@@ -225,7 +231,6 @@ class ProfileController extends StateNotifier<List<Person>> {
         .get();
 
     final matchedUserIDs = matchesSnapshot.docs.map((doc) => doc.id).toList();
-
     if (matchedUserIDs.isEmpty) return [];
 
     final matchedProfilesSnapshot = await FirebaseFirestore.instance

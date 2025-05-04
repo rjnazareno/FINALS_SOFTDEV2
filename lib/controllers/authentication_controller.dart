@@ -8,8 +8,10 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:ua_dating_app/authentication/login_screen.dart';
 import 'package:ua_dating_app/authentication/registration_screen.dart';
 import 'package:ua_dating_app/home_screen.dart';
+import 'package:ua_dating_app/providers/user_provider.dart';
 
 final authControllerProvider = ChangeNotifierProvider<AuthenticationController>((ref) {
   return AuthenticationController(ref);
@@ -99,6 +101,34 @@ class AuthenticationController extends ChangeNotifier {
     final snapshot = await uploadTask.whenComplete(() {});
     return await snapshot.ref.getDownloadURL();
   }
+  
+  Future<void> logout(BuildContext context) async {
+  await FirebaseAuth.instance.signOut();
+
+  // Invalidate all user-related providers (refresh state)
+  ref.invalidate(userProvider);
+
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (_) => const LoginScreen()),
+    (route) => false,
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // 💾 Store user data in Firestore
   Future<void> _saveUserToFirestore({
@@ -228,6 +258,7 @@ class AuthenticationController extends ChangeNotifier {
     final userDoc = await _firestore.collection('users').doc(uid).get();
     return userDoc.exists;
   }
+
 
   // 💾 Store profile for Google user
   Future<void> storeGoogleUserProfile({

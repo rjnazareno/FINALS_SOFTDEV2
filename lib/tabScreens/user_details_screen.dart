@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously, deprecated_member_use
+// ignore_for_file: use_build_context_synchronously
 
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:ua_dating_app/authentication/login_screen.dart';
 import 'package:ua_dating_app/providers/user_provider.dart';
 
 class UserDetailsScreen extends ConsumerStatefulWidget {
@@ -18,9 +17,9 @@ class UserDetailsScreen extends ConsumerStatefulWidget {
 }
 
 class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final Map<String, TextEditingController> _controllers = {};
   final picker = ImagePicker();
+  bool isEditing = false;
+  final Map<String, TextEditingController> _controllers = {};
 
   Future<void> _saveToFirestore() async {
     final userId = FirebaseAuth.instance.currentUser!.uid;
@@ -32,9 +31,9 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
       'gender': _controllers['gender']!.text.trim(),
       'courseOrStrand': _controllers['courseOrStrand']!.text.trim(),
       'lookingForInaPartner': _controllers['lookingForInaPartner']!.text.trim(),
-      'email': _controllers['email']!.text.trim(),
     };
     await FirebaseFirestore.instance.collection("users").doc(userId).update(updatedData);
+    setState(() => isEditing = false);
   }
 
   Future<void> _changeImage() async {
@@ -45,33 +44,65 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
       await storageRef.putFile(File(pickedFile.path));
       final imageUrl = await storageRef.getDownloadURL();
       await FirebaseFirestore.instance.collection("users").doc(userId).update({'imageProfile': imageUrl});
-      ref.invalidate(userProvider); // Refresh user data
+      ref.invalidate(userProvider);
     }
   }
 
-  Widget _buildEditableField(String label, String key, {int maxLines = 1, bool readOnly = false}) {
+  Widget _infoTile({
+    required IconData icon,
+    required String title,
+    required String key,
+    bool editable = true,
+  }) {
+    final boldColor = const Color.fromARGB(255, 68, 68, 68);
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: TextFormField(
-        controller: _controllers[key],
-        readOnly: readOnly,
-        maxLines: maxLines,
-        style: TextStyle(
-          fontSize: 16,
-          color: readOnly ? Colors.grey[600] : const Color.fromARGB(255, 68, 68, 68),
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(14),
         ),
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: const TextStyle(color: Color.fromARGB(255, 68, 68, 68)),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          fillColor: readOnly ? Colors.grey.shade100 : null,
-          filled: readOnly,
-          suffixIcon: !readOnly ? const Icon(Icons.edit, color: Color.fromARGB(255, 68, 68, 68)) : null,
-        ),
-        onChanged: (value) async {
-          if (!readOnly) await _saveToFirestore();
-        },
+        child: isEditing && editable
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(children: [
+                    Icon(icon, color: boldColor),
+                    const SizedBox(width: 8),
+                    Text(title, style: TextStyle(fontWeight: FontWeight.bold, color: boldColor)),
+                  ]),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _controllers[key],
+                    style: TextStyle(color: boldColor), // match display color
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                ],
+              )
+            : Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(icon, color: boldColor),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title.toUpperCase(),
+                            style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                        const SizedBox(height: 4),
+                        Text(_controllers[key]?.text ?? '',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: boldColor)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -82,211 +113,110 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text("About Me", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 22)),
-        actions: [
-          IconButton(
-  icon: const Icon(Icons.logout, color: Colors.redAccent),
-  onPressed: () async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Confirm Logout"),
-        content: const Text("Are you sure you want to logout?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text("Cancel"),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text("Logout", style: TextStyle(color: Colors.redAccent)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-
-      await FirebaseAuth.instance.signOut();
-
-      // Close loading spinner
-      Navigator.of(context, rootNavigator: true).pop();
-
-      // Navigate to LoginScreen and remove all previous routes
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-    }
-  },
-),
-        ],
-      ),
       body: userAsyncValue.when(
         data: (userDoc) {
           if (!userDoc.exists) return const Center(child: Text("User data not found."));
           final data = userDoc.data() as Map<String, dynamic>;
 
-          for (var field in ['name', 'age', 'phoneNo', 'city', 'gender', 'courseOrStrand', 'lookingForInaPartner', 'email']) {
+          for (var field in [
+            'name', 'age', 'phoneNo', 'city', 'gender',
+            'courseOrStrand', 'lookingForInaPartner', 'email'
+          ]) {
             _controllers[field] ??= TextEditingController(text: data[field] ?? '');
           }
 
-          return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(userProvider),
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 20),
-                  GestureDetector(
-                    onTap: _changeImage,
-                    child: Card(
-                      elevation: 6,
-                      margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+          return Stack(
+            children: [
+              SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: isEditing ? _changeImage : null,
                       child: Stack(
-                        alignment: Alignment.center,
+                        alignment: Alignment.bottomLeft,
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(24),
-                            child: data['imageProfile'] != null && data['imageProfile'].toString().isNotEmpty
-                                ? Image.network(
-                                    data['imageProfile'],
-                                    height: 500,
-                                    width: double.infinity,
-                                    fit: BoxFit.cover,
-                                  )
-                                : Container(
-                                    height: 500,
-                                    width: double.infinity,
-                                    color: Colors.grey[300],
-                                    child: const Icon(Icons.person, size: 100, color: Colors.white),
-                                  ),
+                          SizedBox(
+                            height: 480,
+                            width: double.infinity,
+                            child: data['imageProfile'] != null &&
+                                    data['imageProfile'].toString().isNotEmpty
+                                ? Image.network(data['imageProfile'], fit: BoxFit.cover)
+                                : Container(color: Colors.grey[300]),
                           ),
-
-                          // Gradient overlay at bottom
-                          Positioned(
-                            bottom: 0,
-                            left: 0,
-                            right: 0,
-                            child: Container(
-                              height: 130,
-                              decoration: BoxDecoration(
-                                borderRadius: const BorderRadius.only(
-                                  bottomLeft: Radius.circular(24),
-                                  bottomRight: Radius.circular(24),
-                                ),
-                                gradient: LinearGradient(
-                                  colors: [Colors.black.withOpacity(0.7), Colors.transparent],
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                ),
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                // ignore: deprecated_member_use
+                                colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
                               ),
                             ),
-                          ),
-
-                          // Image Picker Icon Centered
-                          const Positioned(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.photo_camera, color: Colors.white, size: 30),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Change Photo',
-                                  style: TextStyle(color: Colors.white, fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Bottom-left: Name, Age, Gender
-                          Positioned(
-                            bottom: 16,
-                            left: 16,
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  "${data['name'] ?? 'Name'}, ${data['age'] ?? ''}",
-                                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  "${data['gender'] ?? 'Gender'}",
-                                  style: const TextStyle(fontSize: 18, color: Colors.white),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Bottom-right: City + Looking For
-                          Positioned(
-                            bottom: 16,
-                            right: 16,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.location_on, color: Colors.white, size: 18),
-                                    const SizedBox(width: 4),
-                                    Text("${data['city'] ?? 'City'}", style: const TextStyle(fontSize: 16, color: Colors.white)),
-                                  ],
-                                ),
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Text(
-                                    "Looking for: ${data['lookingForInaPartner'] ?? 'N/A'}",
-                                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500),
-                                  ),
-                                ),
+                                Text('${data['name']}, ${data['age']}',
+                                    style: const TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white)),
+                                const SizedBox(height: 4),
+                                Text(data['gender'] ?? '',
+                                    style: const TextStyle(fontSize: 18, color: Colors.white)),
                               ],
                             ),
                           ),
                         ],
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 12),
 
-                  // Editable Fields
-                  Form(
-                    key: _formKey,
-                    child: Column(
-                      children: [
-                        _buildEditableField("Email", 'email', readOnly: true),
-                        _buildEditableField("City", 'city'),
-                        _buildEditableField("Phone Number", 'phoneNo'),
-                        _buildEditableField("Course/Strand", 'courseOrStrand'),
-                        _buildEditableField("Looking For", 'lookingForInaPartner'),
-                      ],
+                    // Info Containers
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      child: Column(
+                        children: [
+                           _infoTile(icon: Icons.email, title: 'Email', key: 'email', editable: false),
+                          _infoTile(icon: Icons.location_city, title: 'City', key: 'city'),
+                          _infoTile(icon: Icons.school, title: 'Course / Strand', key: 'courseOrStrand'),
+                          _infoTile(icon: Icons.favorite, title: 'Looking For in a Partner', key: 'lookingForInaPartner'),
+                          _infoTile(icon: Icons.phone, title: 'Phone Number', key: 'phoneNo'),
+                          if (isEditing)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 24),
+                              child: ElevatedButton.icon(
+                                onPressed: _saveToFirestore,
+                                icon: const Icon(Icons.save),
+                                label: const Text("Save"),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.black,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+                  ],
+                ),
               ),
-            ),
+
+              // Floating Edit Button
+              Positioned(
+                bottom: 24,
+                right: 24,
+                child: FloatingActionButton(
+                  backgroundColor: Colors.red,
+                  onPressed: () => setState(() => isEditing = !isEditing),
+                  child: Icon(isEditing ? Icons.close : Icons.edit, color: Colors.white),
+                ),
+              ),
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
