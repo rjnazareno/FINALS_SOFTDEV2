@@ -45,17 +45,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     );
 
-    if (confirm == true) {
-      await FirebaseAuth.instance.signOut();
-      ref.invalidate(userProvider);
-      // ignore: use_build_context_synchronously
-      Navigator.pushAndRemoveUntil(
-        // ignore: use_build_context_synchronously
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false,
-      );
-    }
+if (confirm == true) {
+  await FirebaseAuth.instance.signOut();
+  ref.invalidate(userProvider);
+
+  if (!mounted) return;
+
+  Navigator.pushAndRemoveUntil(
+    // ignore: use_build_context_synchronously
+    context,
+    MaterialPageRoute(builder: (_) => const LoginScreen()),
+    (route) => false,
+  );
+}
   }
 
   @override

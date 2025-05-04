@@ -1,13 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-// ignore: depend_on_referenced_packages
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-/// A Riverpod [FutureProvider] that fetches the currently logged-in user's document
+/// A Riverpod [FutureProvider] that fetches the current user's Firestore document.
 final userProvider = FutureProvider.autoDispose<DocumentSnapshot<Map<String, dynamic>>>((ref) async {
-  final currentUser = FirebaseAuth.instance.currentUser;
+  final user = FirebaseAuth.instance.currentUser;
 
-  if (currentUser == null) {
+  if (user == null) {
     throw FirebaseAuthException(
       code: 'no-current-user',
       message: "No user is currently logged in.",
@@ -16,13 +15,13 @@ final userProvider = FutureProvider.autoDispose<DocumentSnapshot<Map<String, dyn
 
   final userDoc = await FirebaseFirestore.instance
       .collection('users')
-      .doc(currentUser.uid)
+      .doc(user.uid)
       .get();
 
-  if (!userDoc.exists) {
+  if (!userDoc.exists || userDoc.data() == null) {
     throw FirebaseException(
       plugin: 'cloud_firestore',
-      message: 'User document does not exist.',
+      message: 'User profile not found in Firestore.',
     );
   }
 

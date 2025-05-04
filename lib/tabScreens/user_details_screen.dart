@@ -1,4 +1,4 @@
-// ignore_for_file: use_build_context_synchronously
+// ignore_for_file: use_build_context_synchronously, deprecated_member_use
 
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -79,7 +79,7 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                     style: TextStyle(color: boldColor), // match display color
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
                     ),
                   ),
                 ],
@@ -132,48 +132,71 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     GestureDetector(
-                      onTap: isEditing ? _changeImage : null,
-                      child: Stack(
-                        alignment: Alignment.bottomLeft,
-                        children: [
-                          SizedBox(
-                            height: 480,
-                            width: double.infinity,
-                            child: data['imageProfile'] != null &&
-                                    data['imageProfile'].toString().isNotEmpty
-                                ? Image.network(data['imageProfile'], fit: BoxFit.cover)
-                                : Container(color: Colors.grey[300]),
-                          ),
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                // ignore: deprecated_member_use
-                                colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text('${data['name']}, ${data['age']}',
-                                    style: const TextStyle(
-                                        fontSize: 28,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white)),
-                                const SizedBox(height: 4),
-                                Text(data['gender'] ?? '',
-                                    style: const TextStyle(fontSize: 18, color: Colors.white)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+  onTap: isEditing ? _changeImage : null,
+  child: Stack(
+    alignment: Alignment.center,
+    children: [
+      SizedBox(
+        height: 480,
+        width: double.infinity,
+        child: data['imageProfile'] != null &&
+                data['imageProfile'].toString().isNotEmpty
+            ? Image.network(data['imageProfile'], fit: BoxFit.cover)
+            : Container(color: Colors.grey[300]),
+      ),
+      
+      // Overlay icon for changing image (only when editing)
+      if (isEditing)
+        Container(
+          height: 480,
+          color: Colors.black26,
+          child: Center(
+            child: ElevatedButton.icon(
+              onPressed: _changeImage,
+              icon: const Icon(Icons.camera_alt, color: Colors.white),
+              label: const Text("Change Image", style: TextStyle(color: Colors.white)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black54,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ),
+        ),
 
+      // Bottom gradient with name and gender
+      Positioned(
+        bottom: 0,
+        left: 0,
+        right: 0,
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('${data['name']}, ${data['age']}',
+                  style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white)),
+              const SizedBox(height: 4),
+              Text(data['gender'] ?? '',
+                  style: const TextStyle(fontSize: 18, color: Colors.white)),
+            ],
+          ),
+        ),
+      ),
+    ],
+  ),
+),
                     // Info Containers
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),

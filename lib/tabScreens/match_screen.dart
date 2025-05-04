@@ -100,54 +100,41 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Stack(
-            alignment: Alignment.topRight,
-            children: [
-              ClipOval(
-                child: Container(
-                  width: 90, // ⬅️ Increased size
-                  height: 90,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    image: DecorationImage(
-                      image: hasImage
-                          ? NetworkImage(person.imageProfile!)
-                          : const AssetImage('images/placeholder.png') as ImageProvider,
-                      fit: BoxFit.cover,
-                    ),
+          Container(
+            width: 94,
+            height: 94,
+            padding: const EdgeInsets.all(2), // Space for the border
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: Colors.blue, // 🔵 Blue border
+                width: 3,
+              ),
+            ),
+            child: ClipOval(
+              child: Container(
+                width: 90,
+                height: 90,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  image: DecorationImage(
+                    image: hasImage
+                        ? NetworkImage(person.imageProfile!)
+                        : const AssetImage('images/placeholder.png') as ImageProvider,
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),
-
-              // Match count badge only on the first item
-              if (index == 0 && matches.length > 1)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Text(
-                      '${matches.length}',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             person.name ?? '',
-      
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.black,),
-            
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: Colors.black,
+            ),
             overflow: TextOverflow.ellipsis,
           ),
         ],
@@ -155,6 +142,7 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
     ),
   );
 }
+
 Widget _buildMessageItem(Person person) {
   final chatId = _getChatId(currentUserID, person.uid!);
 
