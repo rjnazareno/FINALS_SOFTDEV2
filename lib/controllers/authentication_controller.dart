@@ -37,6 +37,7 @@ class AuthenticationController extends ChangeNotifier {
     if (image != null) {
       _profileImage = File(image.path);
       notifyListeners();
+      if (!context.mounted) return;
       _showSnackbar(context, "Profile Image",
           "Successfully selected your profile image.", true);
     }
@@ -47,6 +48,7 @@ class AuthenticationController extends ChangeNotifier {
     if (image != null) {
       _profileImage = File(image.path);
       notifyListeners();
+      if (!context.mounted) return;
       _showSnackbar(context, "Profile Image",
           "Successfully captured your profile image.", true);
     }
@@ -90,11 +92,13 @@ class AuthenticationController extends ChangeNotifier {
         imageUrl: imageUrl,
       );
 
+      if (!context.mounted) return;
       _showSnackbar(
           context, "Account Created", "You have successfully registered.", true);
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (_) => const HomeScreen()));
     } catch (e) {
+      if (!context.mounted) return;
       _showSnackbar(context, "Account Creation Failed", "$e", false);
     }
   }
@@ -142,6 +146,7 @@ class AuthenticationController extends ChangeNotifier {
     try {
       final credential = await _auth.signInWithEmailAndPassword(
           email: emailUser, password: passwordUser);
+
       final userDoc = await _firestore
           .collection('users')
           .doc(credential.user!.uid)
@@ -149,6 +154,7 @@ class AuthenticationController extends ChangeNotifier {
 
       if (!userDoc.exists) {
         await _auth.signOut();
+        if (!context.mounted) return;
         _showSnackbar(context, "Login Failed",
             "User profile not found. Please register first.", false);
         return;
@@ -157,11 +163,13 @@ class AuthenticationController extends ChangeNotifier {
       final userData = userDoc.data();
       if (userData == null || userData['email'] != emailUser) {
         await _auth.signOut();
+        if (!context.mounted) return;
         _showSnackbar(context, "Login Failed",
             "Account data mismatch. Contact support.", false);
         return;
       }
 
+      if (!context.mounted) return;
       _showSnackbar(context, "Login Success", "Welcome back!", true);
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (_) => const HomeScreen()));
@@ -172,8 +180,10 @@ class AuthenticationController extends ChangeNotifier {
       } else if (e.code == 'wrong-password') {
         errorMsg = "Incorrect password.";
       }
+      if (!context.mounted) return;
       _showSnackbar(context, "Login Failed", errorMsg, false);
     } catch (error) {
+      if (!context.mounted) return;
       _showSnackbar(
           context, "Login Failed", "Unexpected error: $error", false);
     }
@@ -183,13 +193,12 @@ class AuthenticationController extends ChangeNotifier {
   Future<void> signInWithGoogle(BuildContext context) async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn();
-
-      // Force account chooser
-      await googleSignIn.signOut();
+      await googleSignIn.signOut(); // Force account chooser
 
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
+        if (!context.mounted) return;
         _showSnackbar(context, "Google Sign-In", "Cancelled by user.", false);
         return;
       }
@@ -207,11 +216,14 @@ class AuthenticationController extends ChangeNotifier {
       final user = userCredential.user;
 
       if (user == null) {
+        if (!context.mounted) return;
         _showSnackbar(context, "Google Sign-In Failed", "User not found.", false);
         return;
       }
 
       final bool exists = await checkUserProfileExists(user.uid);
+
+      if (!context.mounted) return;
 
       if (exists) {
         _showSnackbar(context, "Welcome Back", "Logged in successfully.", true);
@@ -231,6 +243,7 @@ class AuthenticationController extends ChangeNotifier {
         );
       }
     } catch (e) {
+      if (!context.mounted) return;
       _showSnackbar(context, "Google Sign-In Failed", e.toString(), false);
     }
   }
@@ -273,6 +286,7 @@ class AuthenticationController extends ChangeNotifier {
   Future<void> logout(BuildContext context) async {
     await _auth.signOut();
     ref.invalidate(userProvider);
+    if (!context.mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (_) => const LoginScreen()),
