@@ -76,7 +76,7 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                   const SizedBox(height: 10),
                   TextField(
                     controller: _controllers[key],
-                    style: TextStyle(color: boldColor), // match display color
+                    style: TextStyle(color: boldColor),
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -113,6 +113,49 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            DrawerHeader(
+              decoration: const BoxDecoration(color: Colors.red),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.person, size: 48, color: Colors.white),
+                  const SizedBox(height: 10),
+                  Text(
+                    _controllers['name']?.text ?? 'Your Profile',
+                    style: const TextStyle(color: Colors.white, fontSize: 20),
+                  ),
+                ],
+              ),
+            ),
+            ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('About Us'),
+              onTap: () {
+                Navigator.pop(context);
+                showAboutDialog(
+                  context: context,
+                  applicationName: 'UA Dating App',
+                  applicationVersion: '1.0.0',
+                  children: const [Text('This is a dating app for UA students.')],
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () async {
+                Navigator.pop(context);
+                await FirebaseAuth.instance.signOut();
+                Navigator.of(context).pushReplacementNamed('/login');
+              },
+            ),
+          ],
+        ),
+      ),
       body: userAsyncValue.when(
         data: (userDoc) {
           if (!userDoc.exists) return const Center(child: Text("User data not found."));
@@ -132,77 +175,72 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     GestureDetector(
-  onTap: isEditing ? _changeImage : null,
-  child: Stack(
-    alignment: Alignment.center,
-    children: [
-      SizedBox(
-        height: 480,
-        width: double.infinity,
-        child: data['imageProfile'] != null &&
-                data['imageProfile'].toString().isNotEmpty
-            ? Image.network(data['imageProfile'], fit: BoxFit.cover)
-            : Container(color: Colors.grey[300]),
-      ),
-      
-      // Overlay icon for changing image (only when editing)
-      if (isEditing)
-        Container(
-          height: 480,
-          color: Colors.black26,
-          child: Center(
-            child: ElevatedButton.icon(
-              onPressed: _changeImage,
-              icon: const Icon(Icons.camera_alt, color: Colors.white),
-              label: const Text("Change Image", style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.black54,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
-            ),
-          ),
-        ),
-
-      // Bottom gradient with name and gender
-      Positioned(
-        bottom: 0,
-        left: 0,
-        right: 0,
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('${data['name']}, ${data['age']}',
-                  style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white)),
-              const SizedBox(height: 4),
-              Text(data['gender'] ?? '',
-                  style: const TextStyle(fontSize: 18, color: Colors.white)),
-            ],
-          ),
-        ),
-      ),
-    ],
-  ),
-),
-                    // Info Containers
+                      onTap: isEditing ? _changeImage : null,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            height: 480,
+                            width: double.infinity,
+                            child: data['imageProfile'] != null &&
+                                    data['imageProfile'].toString().isNotEmpty
+                                ? Image.network(data['imageProfile'], fit: BoxFit.cover)
+                                : Container(color: Colors.grey[300]),
+                          ),
+                          if (isEditing)
+                            Container(
+                              height: 480,
+                              color: Colors.black26,
+                              child: Center(
+                                child: ElevatedButton.icon(
+                                  onPressed: _changeImage,
+                                  icon: const Icon(Icons.camera_alt, color: Colors.white),
+                                  label: const Text("Change Image", style: TextStyle(color: Colors.white)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.black54,
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+                                ),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text('${data['name']}, ${data['age']}',
+                                      style: const TextStyle(
+                                          fontSize: 28,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white)),
+                                  const SizedBox(height: 4),
+                                  Text(data['gender'] ?? '',
+                                      style: const TextStyle(fontSize: 18, color: Colors.white)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       child: Column(
                         children: [
-                           _infoTile(icon: Icons.email, title: 'Email', key: 'email', editable: false),
+                          _infoTile(icon: Icons.email, title: 'Email', key: 'email', editable: false),
                           _infoTile(icon: Icons.location_city, title: 'City', key: 'city'),
                           _infoTile(icon: Icons.school, title: 'Course / Strand', key: 'courseOrStrand'),
                           _infoTile(icon: Icons.favorite, title: 'Looking For in a Partner', key: 'lookingForInaPartner'),
@@ -228,8 +266,6 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                   ],
                 ),
               ),
-
-              // Floating Edit Button
               Positioned(
                 bottom: 24,
                 right: 24,

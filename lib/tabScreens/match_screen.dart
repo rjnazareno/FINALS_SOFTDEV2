@@ -29,7 +29,6 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
 
   Future<void> _fetchMatches() async {
     final fetchedMatches = await ref.read(profileControllerProvider.notifier).getMatchedUsers();
-
     final messagedSnapshots = await FirebaseFirestore.instance
         .collection("users")
         .doc(currentUserID)
@@ -65,10 +64,7 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
         .doc(currentUserID)
         .collection("messaged")
         .doc(otherUserId)
-        .set({
-          "timestamp": FieldValue.serverTimestamp(),
-          "deleted": false,
-        });
+        .set({"timestamp": FieldValue.serverTimestamp(), "deleted": false});
   }
 
   void _startChat(Person person) async {
@@ -95,28 +91,23 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
 
     return GestureDetector(
       onTap: () => _startChat(person),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Container(
+        margin: const EdgeInsets.only(left: 16),
+        width: 80,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 94,
-              height: 94,
+              width: 70,
+              height: 70,
               padding: const EdgeInsets.all(2),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.blue,
-                  width: 3,
-                ),
+                border: Border.all(color: Colors.redAccent, width: 2),
               ),
               child: ClipOval(
                 child: Container(
-                  width: 90,
-                  height: 90,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
                     image: DecorationImage(
                       image: hasImage
                           ? NetworkImage(person.imageProfile!)
@@ -127,13 +118,14 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
                 ),
               ),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               person.name ?? '',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: titleColor,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -146,127 +138,124 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
   Widget _buildMessageItem(Person person) {
     final chatId = _getChatId(currentUserID, person.uid!);
 
-    return Dismissible(
-      key: Key(person.uid!),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        color: Colors.red,
-        child: const Icon(Icons.delete_forever, color: Colors.white),
-      ),
-      confirmDismiss: (_) async {
-        return await showDialog<bool>(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text("Delete Chat"),
-            content: const Text("Are you sure you want to permanently delete this chat?"),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
-              TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete")),
-            ],
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection("chats")
+          .doc(chatId)
+          .collection("messages")
+          .orderBy("timestamp", descending: true)
+          .limit(1)
+          .snapshots(),
+      builder: (context, snapshot) {
+        String subtitle = "Tap to open chat";
+
+        if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+          final message = snapshot.data!.docs.first;
+          final data = message.data() as Map<String, dynamic>;
+          final text = data['text'] ?? "";
+          final senderId = data['senderId'] ?? "";
+          subtitle = senderId == currentUserID ? "You: $text" : text;
+        } else if (snapshot.hasError) {
+          subtitle = "Could not load chat";
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: Dismissible(
+            key: Key(person.uid!),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              color: Colors.red,
+              child: const Icon(Icons.delete_forever, color: Colors.white),
+            ),
+            confirmDismiss: (_) async {
+              return await showDialog<bool>(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text("Delete Chat"),
+                  content: const Text("Are you sure you want to permanently delete this chat?"),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text("Cancel")),
+                    TextButton(onPressed: () => Navigator.pop(context, true), child: const Text("Delete")),
+                  ],
+                ),
+              );
+            },
+            onDismissed: (_) async {
+              setState(() {
+                messages.removeWhere((p) => p.uid == person.uid);
+              });
+
+              final chatRef = FirebaseFirestore.instance.collection("chats").doc(chatId);
+              final messageSnapshot = await chatRef.collection("messages").get();
+              for (var doc in messageSnapshot.docs) {
+                await doc.reference.delete();
+              }
+              await chatRef.delete();
+
+              final usersRef = FirebaseFirestore.instance.collection("users");
+              await usersRef
+                  .doc(currentUserID)
+                  .collection("messaged")
+                  .doc(person.uid!)
+                  .set({"deleted": true}, SetOptions(merge: true));
+              await usersRef
+                  .doc(person.uid!)
+                  .collection("messaged")
+                  .doc(currentUserID)
+                  .set({"deleted": true}, SetOptions(merge: true));
+
+              await ref.read(profileControllerProvider.notifier).removeLikesBetween(currentUserID, person.uid!);
+            },
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    // ignore: deprecated_member_use
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                leading: CircleAvatar(
+                  radius: 28,
+                  backgroundImage: person.imageProfile != null
+                      ? NetworkImage(person.imageProfile!)
+                      : const AssetImage('images/placeholder.png') as ImageProvider,
+                ),
+                title: Text(
+                  person.name ?? 'No Name',
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                subtitle: Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                ),
+                trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 26),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ChatScreen(person: person)),
+                  );
+                },
+              ),
+            ),
           ),
         );
       },
-      onDismissed: (_) async {
-  setState(() {
-    messages.removeWhere((p) => p.uid == person.uid);
-    matches.removeWhere((p) => p.uid == person.uid);
-  });
-
-  final chatRef = FirebaseFirestore.instance.collection("chats").doc(chatId);
-  final messageSnapshot = await chatRef.collection("messages").get();
-  for (var doc in messageSnapshot.docs) {
-    await doc.reference.delete();
-  }
-  await chatRef.delete();
-
-  final usersRef = FirebaseFirestore.instance.collection("users");
-
-  await usersRef
-      .doc(currentUserID)
-      .collection("messaged")
-      .doc(person.uid!)
-      .set({"deleted": true}, SetOptions(merge: true));
-
-  await usersRef
-      .doc(person.uid!)
-      .collection("messaged")
-      .doc(currentUserID)
-      .set({"deleted": true}, SetOptions(merge: true));
-
-  // ✅ Only use ref if still mounted
-  if (!mounted) return;
-
-  await ref
-      .read(profileControllerProvider.notifier)
-      .removeLikesBetween(currentUserID, person.uid!);
-},
-      child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection("chats")
-            .doc(chatId)
-            .collection("messages")
-            .orderBy("timestamp", descending: true)
-            .limit(1)
-            .snapshots(),
-        builder: (context, snapshot) {
-          String subtitle = "Tap to open chat";
-
-          if (snapshot.hasData) {
-            final docs = snapshot.data!.docs;
-            if (docs.isNotEmpty) {
-              final message = docs.first;
-              final data = message.data() as Map<String, dynamic>;
-
-              final text = data['text'] ?? "";
-              final senderId = data['senderId'] ?? "";
-
-              subtitle = senderId == currentUserID ? "You: $text" : text;
-            }
-          } else if (snapshot.hasError) {
-            subtitle = "Could not load chat";
-          }
-
-          return ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            leading: CircleAvatar(
-              radius: 30,
-              backgroundImage: person.imageProfile != null
-                  ? NetworkImage(person.imageProfile!)
-                  : const AssetImage('images/placeholder.png') as ImageProvider,
-            ),
-            title: Text(
-              person.name ?? 'No Name',
-              style: TextStyle(
-                color: titleColor,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            subtitle: Text(
-              subtitle,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.grey,
-                fontSize: 16,
-              ),
-            ),
-            trailing: const Icon(
-              Icons.chevron_right,
-              size: 28,
-              color: Colors.grey,
-            ),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => ChatScreen(person: person)),
-              );
-            },
-          );
-        },
-      ),
     );
   }
 
@@ -278,28 +267,6 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        centerTitle: true,
-        title: Row(
-          mainAxisSize: MainAxisSize.min,
-            children: [
-            Image.asset('images/logo.png', width: 32, height: 32),
-            const SizedBox(width: 8),
-            const Text(
-              'UAmatch',
-              style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Jua',
-              color: Color.fromARGB(255, 0, 0, 0),
-              ),
-            ),
-          ],
-        ),
-      ),
       body: FutureBuilder<void>(
         future: _loadMatchesFuture,
         builder: (context, snapshot) {
@@ -307,117 +274,77 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
             return const Center(child: CircularProgressIndicator());
           }
 
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Matches Header with Badge
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    Text(
-                      "Your Matches",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: titleColor),
-                    ),
-                    const SizedBox(width: 8),
-                    if (matches.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          "${matches.length}",
-                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                  ],
+          return SafeArea(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    "Chats",
+                    style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.black),
+                  ),
                 ),
-              ),
-
-              // Matches List
-              SizedBox(
-                height: 120,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: matches.isNotEmpty ? matches.length : 1,
-                  itemBuilder: (context, index) {
-                    if (matches.isEmpty) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Column(
-                          children: [
-                            ClipOval(
-                              child: Container(
-                                width: 90,
-                                height: 90,
-                                decoration: const BoxDecoration(
-                                  image: DecorationImage(
-                                    image: AssetImage('images/placeholder.png'),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            const Text(
-                              "No matches",
-                              style: TextStyle(fontSize: 14, color: Colors.grey),
-                            ),
-                          ],
-                        ),
-                      );
-                    } else {
-                      return _buildMatchItem(matches[index], index);
-                    }
-                  },
+                const SizedBox(height: 24),
+                _buildSectionHeader("Your Matches", matches.length),
+                const SizedBox(height: 12),
+                SizedBox(
+                  height: 110,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: matches.isNotEmpty ? matches.length : 1,
+                    itemBuilder: (context, index) {
+                      if (matches.isEmpty) {
+                        return const Padding(
+                          padding: EdgeInsets.only(left: 16),
+                          child: Column(
+                            children: [
+                              CircleAvatar(radius: 35, backgroundImage: AssetImage('images/placeholder.png')),
+                              SizedBox(height: 6),
+                              Text("No matches", style: TextStyle(fontSize: 14, color: Colors.grey)),
+                            ],
+                          ),
+                        );
+                      } else {
+                        return _buildMatchItem(matches[index], index);
+                      }
+                    },
+                  ),
                 ),
-              ),
-
-              // Messages Header with Badge
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    Text(
-                      "Messages",
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: titleColor),
-                    ),
-                    const SizedBox(width: 8),
-                    if (messages.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 8),
+                _buildSectionHeader("Chats", messages.length),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: messages.isEmpty
+                      ? Center(child: Text("No messages yet. Start chatting!", style: TextStyle(color: Colors.grey[600], fontSize: 16)))
+                      : ListView.builder(
+                          itemCount: messages.length,
+                          itemBuilder: (context, index) => _buildMessageItem(messages[index]),
                         ),
-                        child: Text(
-                          "${messages.length}",
-                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                  ],
                 ),
-              ),
-
-              // Messages List
-              Expanded(
-                child: messages.isEmpty
-                    ? Center(
-                        child: Text(
-                          "No messages yet. Start chatting!",
-                          style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                        ),
-                      )
-                    : ListView.builder(
-                        itemCount: messages.length,
-                        itemBuilder: (context, index) => _buildMessageItem(messages[index]),
-                      ),
-              ),
-            ],
+              ],
+            ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, int count) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: titleColor)),
+          const SizedBox(width: 8),
+          if (count > 0)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(12)),
+              child: Text("$count", style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            ),
+        ],
       ),
     );
   }
