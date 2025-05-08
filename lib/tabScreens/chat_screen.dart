@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:ua_dating_app/models/person.dart';
+import 'package:ua_dating_app/full_image_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final Person person;
@@ -80,66 +81,81 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildMessageInput() {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-    child: Row(
-      children: [
-        Expanded(
-          child: TextField(
-            controller: _messageController,
-            style: const TextStyle(color: Colors.black), // <-- Add this line
-            decoration: InputDecoration(
-              hintText: 'Type a message...',
-              filled: true,
-              fillColor: Colors.grey.shade100,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(25),
-                borderSide: BorderSide.none,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              style: const TextStyle(color: Colors.black),
+              decoration: InputDecoration(
+                hintText: 'Type a message...',
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
           ),
-        ),
-        const SizedBox(width: 8),
-        CircleAvatar(
-          backgroundColor: Colors.blueAccent,
-          child: IconButton(
-            icon: const Icon(Icons.send, color: Colors.white),
-            onPressed: _sendMessage,
+          const SizedBox(width: 8),
+          CircleAvatar(
+            backgroundColor: Colors.blueAccent,
+            child: IconButton(
+              icon: const Icon(Icons.send, color: Colors.white),
+              onPressed: _sendMessage,
+            ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-  backgroundColor: Colors.white,
-  elevation: 1,
-  iconTheme: const IconThemeData(color: Colors.black),
-  title: Row(
-    children: [
-      CircleAvatar(
-        radius: 20,
-        backgroundImage: widget.person.imageProfile != null
-            ? NetworkImage(widget.person.imageProfile!)
-            : const AssetImage('images/placeholder.png') as ImageProvider,
-      ),
-      const SizedBox(width: 12),
-      Text(
-        widget.person.name ?? 'Chat',
-        style: const TextStyle(
-          color: Colors.black,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
+        backgroundColor: Colors.white,
+        elevation: 1,
+        iconTheme: const IconThemeData(color: Colors.black),
+        title: Row(
+          children: [
+            GestureDetector(
+              onTap: () {
+                if (widget.person.imageProfile != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => FullImageScreen(imageUrl: widget.person.imageProfile!),
+                    ),
+                  );
+                }
+              },
+              child: Hero(
+                tag: widget.person.imageProfile ?? '',
+                child: CircleAvatar(
+                  radius: 20,
+                  backgroundImage: widget.person.imageProfile != null
+                      ? NetworkImage(widget.person.imageProfile!)
+                      : const AssetImage('images/placeholder.png') as ImageProvider,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              widget.person.name ?? 'Chat',
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
-    ],
-  ),
-),
       body: Column(
         children: [
           Expanded(

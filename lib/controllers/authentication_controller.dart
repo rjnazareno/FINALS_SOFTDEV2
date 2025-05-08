@@ -13,8 +13,7 @@ import 'package:ua_dating_app/authentication/registration_screen.dart';
 import 'package:ua_dating_app/home_screen.dart';
 import 'package:ua_dating_app/providers/user_provider.dart';
 
-final authControllerProvider =
-    ChangeNotifierProvider<AuthenticationController>((ref) {
+final authControllerProvider = ChangeNotifierProvider<AuthenticationController>((ref) {
   return AuthenticationController(ref);
 });
 
@@ -38,8 +37,7 @@ class AuthenticationController extends ChangeNotifier {
       _profileImage = File(image.path);
       notifyListeners();
       if (!context.mounted) return;
-      _showSnackbar(context, "Profile Image",
-          "Successfully selected your profile image.", true);
+      _showSnackbar(context, "Profile Image", "Successfully selected your profile image.", true);
     }
   }
 
@@ -49,59 +47,77 @@ class AuthenticationController extends ChangeNotifier {
       _profileImage = File(image.path);
       notifyListeners();
       if (!context.mounted) return;
-      _showSnackbar(context, "Profile Image",
-          "Successfully captured your profile image.", true);
+      _showSnackbar(context, "Profile Image", "Successfully captured your profile image.", true);
     }
   }
 
-  // 🧾 New user registration
-  Future<void> createNewUserAccount(
-    BuildContext context,
-    String email,
-    String password,
-    String name,
-    String age,
-    String phoneNo,
-    String city,
-    String courseOrStrand,
-    String lookingForInaPartner,
-    String gender,
-    String status,
-    String extra,
-    String s,
-  ) async {
-    try {
-      final credential = await _auth.createUserWithEmailAndPassword(
-          email: email, password: password);
+Future<bool> createNewUserAccount(
+  BuildContext context,
+  String email,
+  String password,
+  String name,
+  String age,
+  String phoneNo,
+  String city,
+  String courseOrStrand,
+  String lookingForInaPartner,
+  String gender,
+  String imagePath,
+  String bio,
+  String interests,
+) async {
+  try {
+    final credential = await _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
 
-      String imageUrl = "";
-      if (_profileImage != null) {
-        imageUrl = await uploadImageToStorage(_profileImage!);
-      }
-
-      await _saveUserToFirestore(
-        uid: credential.user!.uid,
-        email: email,
-        name: name,
-        age: age,
-        phoneNo: phoneNo,
-        city: city,
-        courseOrStrand: courseOrStrand,
-        lookingForInaPartner: lookingForInaPartner,
-        gender: gender,
-        imageUrl: imageUrl,
-      );
-
-      if (!context.mounted) return;
-      _showSnackbar(
-          context, "Account Created", "You have successfully registered.", true);
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-    } catch (e) {
-      if (!context.mounted) return;
-      _showSnackbar(context, "Account Creation Failed", "$e", false);
+    String imageUrl = "";
+    if (_profileImage != null) {
+      imageUrl = await uploadImageToStorage(_profileImage!);
     }
+
+    await _saveUserToFirestore(
+      uid: credential.user!.uid,
+      email: email,
+      name: name,
+      age: age,
+      phoneNo: phoneNo,
+      city: city,
+      courseOrStrand: courseOrStrand,
+      lookingForInaPartner: lookingForInaPartner,
+      gender: gender,
+      imageUrl: imageUrl,
+      bio: bio,
+      interests: interests,
+    );
+
+    if (!context.mounted) return false;
+    _showSnackbar(context, "Account Created", "You have successfully registered.", true);
+    return true;
+  } on FirebaseAuthException catch (e) {
+    String errorMsg = "Account creation failed.";
+    if (e.code == 'email-already-in-use') {
+      errorMsg = "That email is already registered.";
+    } else if (e.code == 'invalid-email') {
+      errorMsg = "The email address is invalid.";
+    } else if (e.code == 'weak-password') {
+      errorMsg = "Your password is too weak.";
+    }
+
+    if (!context.mounted) return false;
+    _showSnackbar(context, "Registration Failed", errorMsg, false);
+    await _auth.signOut();
+    return false;
+  } catch (e) {
+    if (!context.mounted) return false;
+    _showSnackbar(context, "Registration Failed", "Unexpected error: $e", false);
+    await _auth.signOut();
+    return false;
   }
+}
+
+
 
   // 🔄 Upload image to Firebase Storage
   Future<String> uploadImageToStorage(File imageFile) async {
@@ -124,6 +140,8 @@ class AuthenticationController extends ChangeNotifier {
     required String lookingForInaPartner,
     required String gender,
     required String imageUrl,
+    required String bio,
+    required String interests,
   }) async {
     await _firestore.collection('users').doc(uid).set({
       'uid': uid,
@@ -135,28 +153,23 @@ class AuthenticationController extends ChangeNotifier {
       'courseOrStrand': courseOrStrand,
       'lookingForInaPartner': lookingForInaPartner,
       'gender': gender,
+      'bio': bio,
+      'interests': interests,
       'imageProfile': imageUrl,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
 
-  // 🔐 Login with email/password
-  Future<void> loginUser(
-      BuildContext context, String emailUser, String passwordUser) async {
+  // 🔐 Login
+  Future<void> loginUser(BuildContext context, String emailUser, String passwordUser) async {
     try {
-      final credential = await _auth.signInWithEmailAndPassword(
-          email: emailUser, password: passwordUser);
-
-      final userDoc = await _firestore
-          .collection('users')
-          .doc(credential.user!.uid)
-          .get();
+      final credential = await _auth.signInWithEmailAndPassword(email: emailUser, password: passwordUser);
+      final userDoc = await _firestore.collection('users').doc(credential.user!.uid).get();
 
       if (!userDoc.exists) {
         await _auth.signOut();
         if (!context.mounted) return;
-        _showSnackbar(context, "Login Failed",
-            "User profile not found. Please register first.", false);
+        _showSnackbar(context, "Login Failed", "User profile not found. Please register first.", false);
         return;
       }
 
@@ -164,15 +177,13 @@ class AuthenticationController extends ChangeNotifier {
       if (userData == null || userData['email'] != emailUser) {
         await _auth.signOut();
         if (!context.mounted) return;
-        _showSnackbar(context, "Login Failed",
-            "Account data mismatch. Contact support.", false);
+        _showSnackbar(context, "Login Failed", "Account data mismatch. Contact support.", false);
         return;
       }
 
       if (!context.mounted) return;
       _showSnackbar(context, "Login Success", "Welcome back!", true);
-      Navigator.pushReplacement(
-          context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
     } on FirebaseAuthException catch (e) {
       String errorMsg = "Login failed. Please try again.";
       if (e.code == 'user-not-found') {
@@ -184,8 +195,7 @@ class AuthenticationController extends ChangeNotifier {
       _showSnackbar(context, "Login Failed", errorMsg, false);
     } catch (error) {
       if (!context.mounted) return;
-      _showSnackbar(
-          context, "Login Failed", "Unexpected error: $error", false);
+      _showSnackbar(context, "Login Failed", "Unexpected error: $error", false);
     }
   }
 
@@ -193,8 +203,7 @@ class AuthenticationController extends ChangeNotifier {
   Future<void> signInWithGoogle(BuildContext context) async {
     try {
       final GoogleSignIn googleSignIn = GoogleSignIn();
-      await googleSignIn.signOut(); // Force account chooser
-
+      await googleSignIn.signOut(); // force chooser
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
 
       if (googleUser == null) {
@@ -203,16 +212,13 @@ class AuthenticationController extends ChangeNotifier {
         return;
       }
 
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
+      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
-      final userCredential =
-          await _auth.signInWithCredential(credential);
+      final userCredential = await _auth.signInWithCredential(credential);
       final user = userCredential.user;
 
       if (user == null) {
@@ -227,11 +233,9 @@ class AuthenticationController extends ChangeNotifier {
 
       if (exists) {
         _showSnackbar(context, "Welcome Back", "Logged in successfully.", true);
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
       } else {
-        _showSnackbar(context, "New User",
-            "Please complete your profile information.", true);
+        _showSnackbar(context, "New User", "Please complete your profile information.", true);
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -248,13 +252,7 @@ class AuthenticationController extends ChangeNotifier {
     }
   }
 
-  // Check Firestore for existing profile
-  Future<bool> checkUserProfileExists(String uid) async {
-    final userDoc = await _firestore.collection('users').doc(uid).get();
-    return userDoc.exists;
-  }
-
-  // For Google users - store additional profile data
+  // ✅ Google user: store extra profile info
   Future<void> storeGoogleUserProfile({
     required String uid,
     required String email,
@@ -266,23 +264,32 @@ class AuthenticationController extends ChangeNotifier {
     required String lookingForInaPartner,
     required String gender,
     required String imageUrl,
+    required String bio,
+    required String interests,
   }) async {
-    await _firestore.collection('users').doc(uid).set({
-      'uid': uid,
-      'email': email,
-      'name': name,
-      'age': age,
-      'phoneNo': phoneNo,
-      'city': city,
-      'courseOrStrand': courseOrStrand,
-      'lookingForInaPartner': lookingForInaPartner,
-      'gender': gender,
-      'imageProfile': imageUrl,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
+    await _saveUserToFirestore(
+      uid: uid,
+      email: email,
+      name: name,
+      age: age,
+      phoneNo: phoneNo,
+      city: city,
+      courseOrStrand: courseOrStrand,
+      lookingForInaPartner: lookingForInaPartner,
+      gender: gender,
+      imageUrl: imageUrl,
+      bio: bio,
+      interests: interests,
+    );
   }
 
-  // 🚪 Logout user
+  // Check Firestore for existing profile
+  Future<bool> checkUserProfileExists(String uid) async {
+    final userDoc = await _firestore.collection('users').doc(uid).get();
+    return userDoc.exists;
+  }
+
+  // 🚪 Logout
   Future<void> logout(BuildContext context) async {
     await _auth.signOut();
     ref.invalidate(userProvider);
@@ -294,9 +301,8 @@ class AuthenticationController extends ChangeNotifier {
     );
   }
 
-  // Snackbar feedback
-  void _showSnackbar(
-      BuildContext context, String title, String message, bool isSuccess) {
+  // Snackbar
+  void _showSnackbar(BuildContext context, String title, String message, bool isSuccess) {
     final snackBar = SnackBar(
       content: Text("$title\n$message"),
       backgroundColor: isSuccess ? Colors.green : Colors.redAccent,

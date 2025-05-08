@@ -13,6 +13,8 @@ class Person {
   String? profileHeading;
   String? courseOrStrand;
   String? lookingForInaPartner;
+  String? bio;
+  String? interests;
   int? publishedTime;
 
   Person({
@@ -26,13 +28,16 @@ class Person {
     this.city,
     this.selectedGender,
     this.profileHeading,
-    this.lookingForInaPartner,
     this.courseOrStrand,
+    this.lookingForInaPartner,
+    this.bio,
+    this.interests,
     this.publishedTime,
   });
 
   factory Person.fromDataSnapshot(DocumentSnapshot snapshot) {
     var data = snapshot.data() as Map<String, dynamic>;
+
     return Person(
       uid: data["uid"],
       name: data["name"],
@@ -45,14 +50,12 @@ class Person {
       profileHeading: data["profileHeading"],
       courseOrStrand: data["courseOrStrand"],
       lookingForInaPartner: data["lookingForInaPartner"],
+      bio: data["bio"],
+      interests: data["interests"],
       publishedTime: data["publishedTime"],
       imageProfile: data["imageProfile"],
     );
   }
-
-  get jobTitle => null;
-
-  get gender => null;
 
   Map<String, dynamic> toJson() {
     return {
@@ -68,6 +71,8 @@ class Person {
       "profileHeading": profileHeading,
       "courseOrStrand": courseOrStrand,
       "lookingForInaPartner": lookingForInaPartner,
+      "bio": bio,
+      "interests": interests,
       "publishedTime": publishedTime,
     };
   }
@@ -77,6 +82,7 @@ class Person {
       throw Exception("Document data is null");
     }
     var data = userDoc.data()!;
+
     return Person(
       uid: data["uid"],
       name: data["name"],
@@ -89,9 +95,15 @@ class Person {
       profileHeading: data["profileHeading"],
       courseOrStrand: data["courseOrStrand"],
       lookingForInaPartner: data["lookingForInaPartner"],
+      bio: data["bio"],
+      interests: data["interests"],
       publishedTime: data["publishedTime"],
       imageProfile: data["imageProfile"],
     );
   }
 
+
+  String get safeBio => bio ?? "";
+  String get safeInterests => interests ?? "";
+  String get safePhoneNo => phoneNo ?? "";
 }

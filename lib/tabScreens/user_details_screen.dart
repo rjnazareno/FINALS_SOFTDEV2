@@ -31,6 +31,8 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
       'gender': _controllers['gender']!.text.trim(),
       'courseOrStrand': _controllers['courseOrStrand']!.text.trim(),
       'lookingForInaPartner': _controllers['lookingForInaPartner']!.text.trim(),
+      'bio': _controllers['bio']!.text.trim(),
+      'interests': _controllers['interests']!.text.trim(),
     };
     await FirebaseFirestore.instance.collection("users").doc(userId).update(updatedData);
     setState(() => isEditing = false);
@@ -77,6 +79,7 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                   TextField(
                     controller: _controllers[key],
                     style: TextStyle(color: boldColor),
+                    maxLines: key == 'bio' ? 5 : 1,
                     decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 12),
@@ -96,8 +99,15 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                         Text(title.toUpperCase(),
                             style: const TextStyle(fontSize: 12, color: Colors.grey)),
                         const SizedBox(height: 4),
-                        Text(_controllers[key]?.text ?? '',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: boldColor)),
+                        Text(
+  _controllers[key]?.text ?? '',
+  style: TextStyle(
+    fontSize: 18,
+    fontWeight: key == 'bio' ? FontWeight.bold : FontWeight.w500,
+    color: boldColor,
+  ),
+),
+
                       ],
                     ),
                   ),
@@ -118,7 +128,7 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
           padding: EdgeInsets.zero,
           children: [
             DrawerHeader(
-              decoration: const BoxDecoration(color: Colors.red),
+              decoration: const BoxDecoration(color: Color.fromARGB(255, 89, 54, 244)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -163,7 +173,7 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
 
           for (var field in [
             'name', 'age', 'phoneNo', 'city', 'gender',
-            'courseOrStrand', 'lookingForInaPartner', 'email'
+            'courseOrStrand', 'lookingForInaPartner', 'bio', 'interests'
           ]) {
             _controllers[field] ??= TextEditingController(text: data[field] ?? '');
           }
@@ -240,10 +250,11 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                       child: Column(
                         children: [
-                          _infoTile(icon: Icons.email, title: 'Email', key: 'email', editable: false),
+                          _infoTile(icon: Icons.person, title: 'Bio', key: 'bio'),
+                           _infoTile(icon: Icons.school, title: 'Course / Strand', key: 'courseOrStrand'),
+                          _infoTile(icon: Icons.interests, title: 'Interests', key: 'interests'),
+                         _infoTile(icon: Icons.favorite, title: 'Looking For in a Partner', key: 'lookingForInaPartner'),
                           _infoTile(icon: Icons.location_city, title: 'City', key: 'city'),
-                          _infoTile(icon: Icons.school, title: 'Course / Strand', key: 'courseOrStrand'),
-                          _infoTile(icon: Icons.favorite, title: 'Looking For in a Partner', key: 'lookingForInaPartner'),
                           _infoTile(icon: Icons.phone, title: 'Phone Number', key: 'phoneNo'),
                           if (isEditing)
                             Padding(
@@ -270,7 +281,7 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                 bottom: 24,
                 right: 24,
                 child: FloatingActionButton(
-                  backgroundColor: Colors.red,
+                  backgroundColor: const Color.fromARGB(255, 41, 122, 189),
                   onPressed: () => setState(() => isEditing = !isEditing),
                   child: Icon(isEditing ? Icons.close : Icons.edit, color: Colors.white),
                 ),

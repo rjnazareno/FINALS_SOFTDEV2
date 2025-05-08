@@ -185,7 +185,7 @@ class ProfileController extends StateNotifier<List<Person>> {
     });
 
     final profile =
-        _allProfiles.firstWhere((p) => p.uid == toUserID, orElse: () => Person(uid: null));
+        _allProfiles.firstWhere((p) => p.uid == toUserID, orElse: () => Person(uid: null, interests: null));
     temporarilyDislikedProfiles.add(profile);
 
     _removeProfileLocally(toUserID);

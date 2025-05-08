@@ -87,70 +87,168 @@ class _SwipingScreenState extends ConsumerState<SwipingScreen> {
                         maxHeight: MediaQuery.of(context).size.height * 0.65,
                         minWidth: MediaQuery.of(context).size.width * 0.85,
                         minHeight: MediaQuery.of(context).size.height * 0.55,
-                        cardBuilder: (context, index) {
-                          final profile = profiles[index];
-                          return ClipRRect(
-                            borderRadius: BorderRadius.circular(24),
-                            child: Stack(
-                              children: [
-                                Positioned.fill(
-                                  child: Image.network(
-                                    profile.imageProfile ?? '',
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        const Center(child: Icon(Icons.error)),
-                                  ),
-                                ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: [
-                                        Colors.transparent,
-                                        Colors.black.withOpacity(0.7),
-                                      ],
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.all(24),
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Text(
-                                        profile.name ?? "Unknown",
-                                        style: const TextStyle(
-                                          fontSize: 28,
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        "${profile.age} • ${profile.city ?? 'Unknown'}",
-                                        style: const TextStyle(
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w500,
-                                          color: Colors.white70,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          if ((profile.lookingForInaPartner ?? '').isNotEmpty)
-                                            _infoChip(profile.lookingForInaPartner!),
-                                          const SizedBox(width: 8),
-                                          if ((profile.selectedGender ?? '').isNotEmpty)
-                                            _infoChip(profile.selectedGender!),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                       cardBuilder: (context, index) {
+  final profile = profiles[index];
+
+  return Container(
+  decoration: BoxDecoration(
+    borderRadius: BorderRadius.circular(24),
+    boxShadow: [
+      BoxShadow(
+        color: Colors.black.withOpacity(0.15),
+        blurRadius: 20,
+        offset: const Offset(0, 8),
+      ),
+    ],
+  ),
+  child: ClipRRect(
+    borderRadius: BorderRadius.circular(24),
+    child: Container(
+      color: Colors.black,
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(), // Prevent overscroll to black
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Top image with overlay
+            Stack(
+              children: [
+                SizedBox(
+                  height: MediaQuery.of(context).size.height * 0.62,
+                  width: double.infinity,
+                  child: Image.network(
+                    profile.imageProfile ?? '',
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const Center(child: Icon(Icons.error, color: Colors.white)),
+                  ),
+                ),
+                Container(
+                  height: MediaQuery.of(context).size.height * 0.62,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 16,
+                  bottom: 38, // Raised a bit higher
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        profile.name ?? "Unknown",
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "${profile.age ?? '??'} • ${profile.city ?? 'Unknown'}",
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+
+            // Details section
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if ((profile.bio ?? '').trim().isNotEmpty) ...[
+                    const Text(
+                      "Bio",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 68, 68, 68),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+  profile.bio!,
+  style: const TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.bold, // or FontWeight.bold
+    fontFamily: 'Roboto',
+    color: Colors.black,
+  ),
+  textAlign: TextAlign.start,
+),
+
+                    const SizedBox(height: 24),
+                  ],
+                  if ((profile.lookingForInaPartner ?? '').trim().isNotEmpty) ...[
+                    const Text(
+                      "Looking For",
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color.fromARGB(255, 68, 68, 68),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: profile.lookingForInaPartner!
+    .split(',')
+    .map((item) => item.trim())
+    .where((item) => item.isNotEmpty)
+    .map((item) => _infoChip(item))
+    .toList(),
+
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+               if ((profile.interests ?? '').trim().isNotEmpty) ...[
+  const Text(
+    "Interests",
+    style: TextStyle(
+      fontSize: 18,
+      fontWeight: FontWeight.bold,
+      color: Color.fromARGB(255, 68, 68, 68),
+    ),
+  ),
+  const SizedBox(height: 8),
+  Wrap(
+    spacing: 8,
+    runSpacing: 8,
+    children: profile.interests!
+        .split(',')
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .map((item) => _infoChip(item))
+        .toList(),
+  ),
+  const SizedBox(height: 24),
+],
+
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+);
+
+},
+
                         swipeUpdateCallback: (DragUpdateDetails details, Alignment align) {},
                         swipeCompleteCallback: (CardSwipeOrientation orientation, int index) async {
                           final swipedProfile = profiles[index];
@@ -260,24 +358,32 @@ class _SwipingScreenState extends ConsumerState<SwipingScreen> {
       },
     );
   }
-
-  Widget _infoChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.25),
-        borderRadius: BorderRadius.circular(30),
-        border: Border.all(color: Colors.white38),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 15,
+Widget _infoChip(String text) {
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    margin: const EdgeInsets.only(right: 8, bottom: 8),
+    decoration: BoxDecoration(
+      color: const Color.fromARGB(255, 248, 246, 246), // Light grey like in the image
+      borderRadius: BorderRadius.circular(24),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black12, // softer shadow
+          blurRadius: 2,
+          offset: Offset(0, 1),
         ),
+      ],
+    ),
+    child: Text(
+      text,
+      style: const TextStyle(
+        color: Color.fromARGB(179, 10, 10, 10), // lighter text, not pure white
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _iconButton(String assetPath, {required VoidCallback onTap, double size = 65}) {
     return GestureDetector(
