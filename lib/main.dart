@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-// ignore: depend_on_referenced_packages
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'authentication/login_screen.dart';
 import 'home_screen.dart';
+import 'splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,7 +13,6 @@ void main() async {
   runApp(const ProviderScope(child: MyApp()));
 }
 
-// 🔁 Provides current Firebase user reactively
 final firebaseAuthProvider = StreamProvider<User?>((ref) {
   return FirebaseAuth.instance.authStateChanges();
 });
@@ -26,11 +25,38 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'UAmatch',
-      theme: ThemeData.dark().copyWith(
+      theme: ThemeData(
+        brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color.fromARGB(255, 253, 253, 253),
       ),
-      home: const AuthGate(),
+      home: const SplashWrapper(),
     );
+  }
+}
+
+class SplashWrapper extends StatefulWidget {
+  const SplashWrapper({super.key});
+
+  @override
+  State<SplashWrapper> createState() => _SplashWrapperState();
+}
+
+class _SplashWrapperState extends State<SplashWrapper> {
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(seconds: 3), () {
+      setState(() {
+        _showSplash = false;
+      });
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return _showSplash ? const SplashScreen() : const AuthGate();
   }
 }
 
@@ -44,9 +70,9 @@ class AuthGate extends ConsumerWidget {
     return authState.when(
       data: (user) {
         if (user == null) {
-          return const LoginScreen(); // 👤 Not logged in
+          return const LoginScreen();
         } else {
-          return const HomeScreen();  // ✅ Logged in
+          return const HomeScreen();
         }
       },
       loading: () => const Scaffold(

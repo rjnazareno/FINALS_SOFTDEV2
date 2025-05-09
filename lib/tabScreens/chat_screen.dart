@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:ua_dating_app/models/person.dart';
-import 'package:ua_dating_app/full_image_screen.dart';
+import 'package:ua_dating_app/profile_card.dart';
 
 class ChatScreen extends StatefulWidget {
   final Person person;
@@ -17,6 +17,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _messageController = TextEditingController();
   final String currentUserId = FirebaseAuth.instance.currentUser?.uid ?? '';
   late final String chatId;
+  bool _showProfile = false;
 
   @override
   void initState() {
@@ -125,14 +126,9 @@ class _ChatScreenState extends State<ChatScreen> {
           children: [
             GestureDetector(
               onTap: () {
-                if (widget.person.imageProfile != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => FullImageScreen(imageUrl: widget.person.imageProfile!),
-                    ),
-                  );
-                }
+                setState(() {
+                  _showProfile = true;
+                });
               },
               child: Hero(
                 tag: widget.person.imageProfile ?? '',
@@ -156,31 +152,56 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _messageStream(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text('Say hi! 👋'));
-                }
+          // Main Chat UI
+          Column(
+            children: [
+              Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: _messageStream(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                      return const Center(child: Text('Say hi! 👋'));
+                    }
 
-                final messages = snapshot.data!.docs;
+                    final messages = snapshot.data!.docs;
 
-                return ListView.builder(
-                  reverse: true,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) => _buildMessage(messages[index]),
-                );
-              },
-            ),
+                    return ListView.builder(
+                      reverse: true,
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) => _buildMessage(messages[index]),
+                    );
+                  },
+                ),
+              ),
+              const Divider(height: 1),
+              _buildMessageInput(),
+            ],
           ),
-          const Divider(height: 1),
-          _buildMessageInput(),
+
+          // Overlay Profile Card
+          if (_showProfile)
+            Positioned.fill(
+              child: Container(
+                // ignore: deprecated_member_use
+                color: Colors.black.withOpacity(0.5),
+                child: SafeArea(
+                  child: ProfileCard(
+                    profile: widget.person,
+                    onClose: () {
+                      setState(() {
+                        _showProfile = false;
+                      });
+                    },
+
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -6,6 +6,7 @@ import 'package:ua_dating_app/authentication/login_screen.dart';
 import 'package:ua_dating_app/controllers/authentication_controller.dart';
 import 'package:ua_dating_app/widgets/custom_text_field_widget.dart';
 import 'package:ua_dating_app/home_screen.dart';
+import 'package:ua_dating_app/user_agreement_screen.dart'; // <-- Make sure this file exists
 
 class RegistrationScreen extends ConsumerStatefulWidget {
   final bool isGoogleUser;
@@ -35,6 +36,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
   String? selectedGender;
   bool isLoading = false;
+  bool agreedToTerms = false;
 
   @override
   void initState() {
@@ -95,10 +97,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
 
               buildCustomTextField(nameController, "Name", Icons.person),
               buildCustomTextField(emailController, "Email", Icons.email, isEnabled: !widget.isGoogleUser),
-
               if (!widget.isGoogleUser)
                 buildCustomTextField(passwordController, "Password", Icons.lock, isObscure: true),
-
               buildCustomTextField(ageController, "Age", Icons.cake),
               buildCustomTextField(phoneController, "Phone", Icons.phone),
               buildCustomTextField(cityController, "City", Icons.location_city),
@@ -116,108 +116,134 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                     prefixIcon: Icon(Icons.wc),
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) => value == null ? 'Please select a gender' : null,
                 ),
               ),
 
-              // === About Me Section ===
               const SizedBox(height: 20),
               const Align(
                 alignment: Alignment.center,
-                child: Text(
-                  "About Me",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 68, 68, 68)),
-                ),
+                child: Text("About Me", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 68, 68, 68))),
               ),
               const SizedBox(height: 12),
               TextField(
-                controller: bioController,
-                maxLines: 5,
-                style: const TextStyle(color: Color.fromARGB(255, 68, 68, 68)), // Text color
-                decoration: const InputDecoration(
-                  labelText: "Bio",
-                  hintText: "Tell us something about yourself",
-                  hintStyle: TextStyle(color: Colors.grey), // Optional
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
-                ),
-              ),
-
+  controller: bioController,
+  maxLines: 5,
+  style: const TextStyle(
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    color: Colors.black, // ensures text is not white
+  ),
+  decoration: const InputDecoration(
+    labelText: "Bio",
+    hintText: "Tell us something about yourself",
+    alignLabelWithHint: true,
+    border: OutlineInputBorder(),
+    hintStyle: TextStyle(color: Colors.grey), // match your theme
+    labelStyle: TextStyle(color: Colors.black87),
+  ),
+),
               buildCustomTextField(courseOrStrandController, "Course/Strand", Icons.school),
               buildCustomTextField(lookingForController, "Looking For (Love,Fling,Friend)", Icons.favorite),
               buildCustomTextField(interestController, "Interests (Music,Movies,Sports)", Icons.interests),
 
-              const SizedBox(height: 30),
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                value: agreedToTerms,
+                onChanged: (value) => setState(() => agreedToTerms = value!),
+                title: GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => UserAgreementScreen(onAccepted: () => Navigator.pop(context)),
+                      ),
+                    );
+                  },
+                  child: const Text.rich(
+                    TextSpan(
+                      children: [
+                        TextSpan(text: 'I agree to the '),
+                        TextSpan(
+                          text: 'Terms and Conditions',
+                          style: TextStyle(decoration: TextDecoration.underline, color: Colors.blue),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
+              ),
+
+              const SizedBox(height: 16),
               ElevatedButton(
-              onPressed: () async {
-  if (_validateFields()) {
-    setState(() => isLoading = true);
+                onPressed: () async {
+                  if (_validateFields()) {
+                    setState(() => isLoading = true);
+                    await Future.delayed(const Duration(seconds: 2));
 
-  
-    await Future.delayed(const Duration(seconds: 3));
+                    try {
+                      final cleanedLookingFor = _cleanCommaSeparated(lookingForController.text);
+                      final cleanedInterests = _cleanCommaSeparated(interestController.text);
+                      final cleanedBio = bioController.text.trim();
 
-    try {
-      final cleanedLookingFor = _cleanCommaSeparated(lookingForController.text);
-      final cleanedInterests = _cleanCommaSeparated(interestController.text);
-      final cleanedBio = bioController.text.trim();  // Ensure Bio is correctly passed
+                      bool success = false;
 
-      bool success = false;
+                      if (widget.isGoogleUser) {
+                        final imageUrl = authController.profileImage != null
+                            ? await authController.uploadImageToStorage(authController.profileImage!)
+                            : '';
 
-      // Handling Google User registration
-      if (widget.isGoogleUser) {
-        final imageUrl = authController.profileImage != null
-            ? await authController.uploadImageToStorage(authController.profileImage!)
-            : '';
+                        await authController.storeGoogleUserProfile(
+                          uid: authController.currentUser?.uid ?? '',
+                          email: widget.email,
+                          name: nameController.text.trim(),
+                          age: ageController.text.trim(),
+                          phoneNo: phoneController.text.trim(),
+                          city: cityController.text.trim(),
+                          courseOrStrand: courseOrStrandController.text.trim(),
+                          lookingForInaPartner: cleanedLookingFor,
+                          gender: selectedGender!,
+                          imageUrl: imageUrl,
+                          bio: cleanedBio,
+                          interests: cleanedInterests,
+                          hasAcceptedAgreement: true,
+                        );
+                        success = true;
+                      } else {
+                        success = await authController.createNewUserAccount(
+                          context,
+                          emailController.text.trim(),
+                          passwordController.text.trim(),
+                          nameController.text.trim(),
+                          ageController.text.trim(),
+                          phoneController.text.trim(),
+                          cityController.text.trim(),
+                          courseOrStrandController.text.trim(),
+                          cleanedLookingFor,
+                          selectedGender!,
+                          authController.profileImage?.path ?? "",
+                          cleanedBio,
+                          cleanedInterests,
+                        );
 
-        await authController.storeGoogleUserProfile(
-          uid: authController.currentUser?.uid ?? '',
-          email: widget.email,
-          name: nameController.text.trim(),
-          age: ageController.text.trim(),
-          phoneNo: phoneController.text.trim(),
-          city: cityController.text.trim(),
-          courseOrStrand: courseOrStrandController.text.trim(),
-          lookingForInaPartner: cleanedLookingFor,
-          gender: selectedGender!,
-          imageUrl: imageUrl,
-          bio: cleanedBio,  // Pass cleaned Bio
-          interests: cleanedInterests,
-        );
+                        // After successful creation, save terms acceptance
+                        if (success && authController.currentUser != null) {
+                          await authController.saveAgreementToFirestore();
+                        }
+                      }
 
-        success = true;
-      } else {
-        // Handling email-based registration
-        success = await authController.createNewUserAccount(
-          context,
-          emailController.text.trim(),
-          passwordController.text.trim(),
-          nameController.text.trim(),
-          ageController.text.trim(),
-          phoneController.text.trim(),
-          cityController.text.trim(),
-          courseOrStrandController.text.trim(),
-          cleanedLookingFor,
-          selectedGender!,
-          authController.profileImage?.path ?? "",
-          cleanedBio,  // Pass cleaned Bio
-          cleanedInterests,
-        );
-      }
-
-      if (success && mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-      }
-
-    } catch (e) {
-      // If any error occurs (e.g., weak password or email already in use)
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
-    } finally {
-      setState(() => isLoading = false);
-    }
-  }
-},
+                      if (success && mounted) {
+                        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+                    } finally {
+                      setState(() => isLoading = false);
+                    }
+                  }
+                },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.redAccent,
+                  backgroundColor: const Color.fromARGB(255, 15, 45, 214),
                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -266,9 +292,12 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     final authController = ref.read(authControllerProvider);
 
     if (authController.profileImage == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please upload a profile picture")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please upload a profile picture")));
+      return false;
+    }
+
+    if (!agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("You must agree to the Terms and Conditions")));
       return false;
     }
 
@@ -283,9 +312,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         lookingForController.text.isEmpty ||
         bioController.text.isEmpty ||
         interestController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please fill in all fields")),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Please fill in all fields")));
       return false;
     }
 
@@ -293,10 +320,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   }
 
   String _cleanCommaSeparated(String input) {
-    return input
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .join(', ');
+    return input.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).join(', ');
   }
 }

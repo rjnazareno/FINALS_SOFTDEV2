@@ -194,9 +194,9 @@ class _LikeSentLikeReceivedScreenState extends State<LikeSentLikeReceivedScreen>
                                 ),
                                 IconButton(
                                   onPressed: () => _confirmDelete(likedUserID),
-                                  icon: const Icon(
-                                    Icons.delete,
-                                    color: Colors.redAccent,
+                                  icon: Icon(
+                                    Icons.more_vert,
+                                    color: const Color.fromARGB(255, 114, 112, 112),
                                     size: 24,
                                   ),
                                 ),

@@ -67,6 +67,14 @@ Future<bool> createNewUserAccount(
   String interests,
 ) async {
   try {
+
+    final userCountSnapshot = await _firestore.collection('users').get();
+    if (userCountSnapshot.docs.length >= 150) {
+      if (!context.mounted) return false;
+      _showSnackbar(context, "Registration Blocked", "User limit reached. No more registrations allowed.", false);
+      return false;
+    }
+
     final credential = await _auth.createUserWithEmailAndPassword(
       email: email,
       password: password,
@@ -116,6 +124,7 @@ Future<bool> createNewUserAccount(
     return false;
   }
 }
+
 
 
 
@@ -265,7 +274,7 @@ Future<bool> createNewUserAccount(
     required String gender,
     required String imageUrl,
     required String bio,
-    required String interests,
+    required String interests, required bool hasAcceptedAgreement,
   }) async {
     await _saveUserToFirestore(
       uid: uid,
@@ -310,4 +319,6 @@ Future<bool> createNewUserAccount(
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
+
+  saveAgreementToFirestore() {}
 }

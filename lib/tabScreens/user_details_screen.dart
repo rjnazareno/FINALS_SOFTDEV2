@@ -252,8 +252,8 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                         children: [
                           _infoTile(icon: Icons.person, title: 'Bio', key: 'bio'),
                            _infoTile(icon: Icons.school, title: 'Course / Strand', key: 'courseOrStrand'),
-                          _infoTile(icon: Icons.interests, title: 'Interests', key: 'interests'),
-                         _infoTile(icon: Icons.favorite, title: 'Looking For in a Partner', key: 'lookingForInaPartner'),
+                          _infoTile(icon: Icons.interests, title: 'Interests (use comma)', key: 'interests'),
+                         _infoTile(icon: Icons.favorite, title: 'Looking For in a Partner (use comma)', key: 'lookingForInaPartner'),
                           _infoTile(icon: Icons.location_city, title: 'City', key: 'city'),
                           _infoTile(icon: Icons.phone, title: 'Phone Number', key: 'phoneNo'),
                           if (isEditing)
@@ -281,7 +281,7 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                 bottom: 24,
                 right: 24,
                 child: FloatingActionButton(
-                  backgroundColor: const Color.fromARGB(255, 41, 122, 189),
+                  backgroundColor: const Color.fromARGB(255, 230, 207, 3),
                   onPressed: () => setState(() => isEditing = !isEditing),
                   child: Icon(isEditing ? Icons.close : Icons.edit, color: Colors.white),
                 ),
