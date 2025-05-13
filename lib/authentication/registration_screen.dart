@@ -6,7 +6,7 @@ import 'package:ua_dating_app/authentication/login_screen.dart';
 import 'package:ua_dating_app/controllers/authentication_controller.dart';
 import 'package:ua_dating_app/widgets/custom_text_field_widget.dart';
 import 'package:ua_dating_app/home_screen.dart';
-import 'package:ua_dating_app/user_agreement_screen.dart'; // <-- Make sure this file exists
+import 'package:ua_dating_app/user_agreement_screen.dart';
 
 class RegistrationScreen extends ConsumerStatefulWidget {
   final bool isGoogleUser;
@@ -29,14 +29,39 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
   final TextEditingController ageController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController cityController = TextEditingController();
-  final TextEditingController courseOrStrandController = TextEditingController();
   final TextEditingController lookingForController = TextEditingController();
   final TextEditingController interestController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
+  final TextEditingController otherCourseController = TextEditingController();
 
   String? selectedGender;
+  String? selectedCourseOrStrand;
   bool isLoading = false;
   bool agreedToTerms = false;
+
+  final List<String> courseStrandOptions = [
+    "Accountancy",
+    "Architecture",
+    "Communication",
+    "Business Administration",
+    "Civil Engineering",
+    "Computer Engineering",
+    "Criminology",
+    "Early Childhood Education",
+    "Elementary Education",
+    "Hospitality Management",
+    "Human Services",
+    "Industrial Engineering",
+    "Information Technology",
+    "Library and Information Science",
+    "Nursing",
+    "Pharmacy",
+    "Physical Education",
+    "Psychology",
+    "Secondary Education",
+    "Tourism Management",
+    "Others", 
+  ];
 
   @override
   void initState() {
@@ -103,21 +128,31 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
               buildCustomTextField(phoneController, "Phone", Icons.phone),
               buildCustomTextField(cityController, "City", Icons.location_city),
 
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 8.0),
-                child: DropdownButtonFormField<String>(
-                  value: selectedGender,
-                  onChanged: (String? newValue) => setState(() => selectedGender = newValue),
-                  items: <String>['Male', 'Female'].map((String value) {
-                    return DropdownMenuItem<String>(value: value, child: Text(value));
-                  }).toList(),
-                  decoration: const InputDecoration(
-                    labelText: "Gender",
-                    prefixIcon: Icon(Icons.wc),
-                    border: OutlineInputBorder(),
-                  ),
-                ),
+              buildDropdownField(
+                label: "Gender",
+                icon: Icons.wc,
+                value: selectedGender,
+                onChanged: (value) => setState(() => selectedGender = value),
+                items: ['Male', 'Female'],
               ),
+
+              buildDropdownField(
+                label: "Course/Strand",
+                icon: Icons.school,
+                value: selectedCourseOrStrand,
+                onChanged: (value) {
+                  setState(() {
+                    selectedCourseOrStrand = value;
+                    if (value != "Others") {
+                      otherCourseController.clear();
+                    }
+                  });
+                },
+                items: courseStrandOptions,
+              ),
+
+              if (selectedCourseOrStrand == "Others")
+                buildCustomTextField(otherCourseController, "Please specify your Course/Strand", Icons.edit),
 
               const SizedBox(height: 20),
               const Align(
@@ -125,24 +160,27 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                 child: Text("About Me", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 68, 68, 68))),
               ),
               const SizedBox(height: 12),
+
               TextField(
-  controller: bioController,
-  maxLines: 5,
-  style: const TextStyle(
-    fontSize: 18,
-    fontWeight: FontWeight.w600,
-    color: Colors.black, // ensures text is not white
-  ),
-  decoration: const InputDecoration(
-    labelText: "Bio",
-    hintText: "Tell us something about yourself",
-    alignLabelWithHint: true,
-    border: OutlineInputBorder(),
-    hintStyle: TextStyle(color: Colors.grey), // match your theme
-    labelStyle: TextStyle(color: Colors.black87),
-  ),
-),
-              buildCustomTextField(courseOrStrandController, "Course/Strand", Icons.school),
+                controller: bioController,
+                maxLines: 5,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black,
+                ),
+                decoration: const InputDecoration(
+                  labelText: "Bio",
+                  hintText: "Tell us something about yourself",
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(),
+                  hintStyle: TextStyle(color: Colors.grey),
+                  labelStyle: TextStyle(color: Color.fromARGB(221, 90, 90, 90)),
+                  filled: true,
+                  fillColor: Colors.white,
+                ),
+              ),
+
               buildCustomTextField(lookingForController, "Looking For (Love,Fling,Friend)", Icons.favorite),
               buildCustomTextField(interestController, "Interests (Music,Movies,Sports)", Icons.interests),
 
@@ -186,6 +224,10 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                       final cleanedInterests = _cleanCommaSeparated(interestController.text);
                       final cleanedBio = bioController.text.trim();
 
+                      final courseValue = selectedCourseOrStrand == "Others"
+                          ? otherCourseController.text.trim()
+                          : selectedCourseOrStrand ?? '';
+
                       bool success = false;
 
                       if (widget.isGoogleUser) {
@@ -200,7 +242,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                           age: ageController.text.trim(),
                           phoneNo: phoneController.text.trim(),
                           city: cityController.text.trim(),
-                          courseOrStrand: courseOrStrandController.text.trim(),
+                          courseOrStrand: courseValue,
                           lookingForInaPartner: cleanedLookingFor,
                           gender: selectedGender!,
                           imageUrl: imageUrl,
@@ -218,7 +260,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                           ageController.text.trim(),
                           phoneController.text.trim(),
                           cityController.text.trim(),
-                          courseOrStrandController.text.trim(),
+                          courseValue,
                           cleanedLookingFor,
                           selectedGender!,
                           authController.profileImage?.path ?? "",
@@ -226,7 +268,6 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                           cleanedInterests,
                         );
 
-                        // After successful creation, save terms acceptance
                         if (success && authController.currentUser != null) {
                           await authController.saveAgreementToFirestore();
                         }
@@ -243,7 +284,7 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
                   }
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color.fromARGB(255, 15, 45, 214),
+                  backgroundColor: const Color.fromARGB(255, 21, 101, 221),
                   padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 40),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -288,6 +329,52 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
     );
   }
 
+  Widget buildDropdownField({
+    required String label,
+    required IconData icon,
+    required String? value,
+    required Function(String?) onChanged,
+    required List<String> items,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 1.0, vertical: 8.0),
+      child: SizedBox(
+        width: double.infinity,
+        child: DropdownButtonFormField<String>(
+          value: value,
+          onChanged: onChanged,
+          items: items.map((String item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(
+                item,
+                style: const TextStyle(fontSize: 18, color: Color.fromARGB(255, 68, 68, 68)),
+              ),
+            );
+          }).toList(),
+          decoration: InputDecoration(
+            contentPadding: const EdgeInsets.symmetric(vertical: 17.0, horizontal: 12.0),
+            labelText: label,
+            prefixIcon: Icon(icon, color: const Color.fromARGB(255, 161, 161, 161)),
+            filled: true,
+            fillColor: Colors.white,
+            labelStyle: const TextStyle(fontSize: 20, color: Colors.grey),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: Colors.grey),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(6),
+              borderSide: const BorderSide(color: Colors.grey),
+            ),
+          ),
+          dropdownColor: Colors.white,
+          iconEnabledColor: Colors.grey,
+        ),
+      ),
+    );
+  }
+
   bool _validateFields() {
     final authController = ref.read(authControllerProvider);
 
@@ -308,7 +395,8 @@ class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
         phoneController.text.isEmpty ||
         cityController.text.isEmpty ||
         selectedGender == null ||
-        courseOrStrandController.text.isEmpty ||
+        selectedCourseOrStrand == null ||
+        (selectedCourseOrStrand == "Others" && otherCourseController.text.isEmpty) ||
         lookingForController.text.isEmpty ||
         bioController.text.isEmpty ||
         interestController.text.isEmpty) {

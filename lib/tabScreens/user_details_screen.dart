@@ -281,7 +281,7 @@ class _UserDetailsScreenState extends ConsumerState<UserDetailsScreen> {
                 bottom: 24,
                 right: 24,
                 child: FloatingActionButton(
-                  backgroundColor: const Color.fromARGB(255, 230, 207, 3),
+                  backgroundColor: const Color.fromARGB(255, 21, 101, 221),
                   onPressed: () => setState(() => isEditing = !isEditing),
                   child: Icon(isEditing ? Icons.close : Icons.edit, color: Colors.white),
                 ),

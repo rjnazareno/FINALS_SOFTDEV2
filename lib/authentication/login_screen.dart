@@ -29,9 +29,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                const SizedBox(height: 40),
-                Image.asset('images/logo.png', width: 200),
-                const SizedBox(height: 20),
+                const SizedBox(height: 30),
+                Image.asset('images/logo.png', width: 140),
+                const SizedBox(height: 30),
                 const Text('Welcome', style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 68, 68, 68))),
                 const SizedBox(height: 10),
                 const Text('Please login to find your match', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500, color: Colors.grey)),
@@ -61,7 +61,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           style: ElevatedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            backgroundColor: const Color.fromARGB(255, 15, 45, 214),
+                            backgroundColor: const Color.fromARGB(255, 32, 108, 221),
                           ),
                           child: const Text(
                             'Login',

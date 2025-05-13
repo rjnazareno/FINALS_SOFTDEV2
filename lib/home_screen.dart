@@ -67,97 +67,93 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return Scaffold(
       key: _scaffoldKey,
       endDrawer: screenIndex == 3
-          ? Drawer(
-              child: ListView(
-  padding: EdgeInsets.zero,
-  children: [
-    DrawerHeader(
-      decoration: const BoxDecoration(
-        color: Color.fromARGB(255, 1, 34, 70), // Keep the dark blue color
-      ),
-      child: Center(
-        child: Text(
-          'UAmatch', // Text for the title
-          style: TextStyle(
-            fontSize:60, // Big size
-            fontWeight: FontWeight.bold, // Bold text
-            fontFamily: 'Jua', // Use Jua font
-            color: Color.fromARGB(255, 194, 232, 250), // Light blue color
+          ? 
+          
+        Drawer(
+  child: Container(
+    color: const Color.fromARGB(255, 255, 255, 255),
+    child: ListView(
+      padding: EdgeInsets.zero,
+      children: [
+        SizedBox(
+          height: 200, // Adjust height as needed
+          child: Image.asset(
+            'images/ua.png',
+            fit: BoxFit.cover, // Ensures the image fills the area
+            width: double.infinity,
           ),
         ),
-      ),
-    ),
-
-    ListTile(
-      leading: const Icon(Icons.email_outlined, color: Color.fromARGB(255, 217, 255, 1)),
-      title: Text(
-        FirebaseAuth.instance.currentUser?.email ?? '',
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Color.fromARGB(255, 241, 239, 239),
-        ),
-      ),
-    ),
-    ListTile(
-      leading: const Icon(Icons.info_outline, color: Color.fromARGB(255, 217, 255, 1)),
-      title: const Text(
-        'About Us',
-        style: TextStyle(
-
-          fontSize: 16,
-          color: Colors.white,
-        ),
-      ),
-      onTap: () {
-        Navigator.pop(context);
-        showAboutDialog(
-          context: context,
-          applicationName: 'UAMatch',
-          applicationVersion: '1.0.0',
-          applicationLegalese: '© 2025 UA Inc.',
-          children: [
-            SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Like a pelican finding its flock, UAMatch connects university students to make meaningful matches. This is a space where you can find your place, whether it’s for friendship, love, or fresh new connections. 🕊️',
-                      textAlign: TextAlign.justify,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    Text(
-                      'We believe everyone deserves to be seen, heard, and connected in their own way. So take a step in the right direction and let us help you make the connection of a lifetime.',
-                      textAlign: TextAlign.justify,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+        ListTile(
+          leading: const Icon(Icons.email_outlined, color: Color.fromARGB(255, 21, 101, 221)),
+          title: Text(
+            FirebaseAuth.instance.currentUser?.email ?? '',
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
             ),
-          ],
-        );
-      },
+          ),
+        ),
+        ListTile(
+          leading: const Icon(Icons.info_outline, color: Color.fromARGB(255, 21, 101, 221)),
+          title: const Text(
+            'About Us',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.black,
+            ),
+          ),
+          onTap: () {
+            Navigator.pop(context);
+            showAboutDialog(
+              context: context,
+              applicationName: 'UAMatch',
+              applicationVersion: '1.0.0',
+              applicationLegalese: '© 2025 UA Inc.',
+              children: [
+                SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: const [
+                        Text(
+                          'Like a pelican finding its flock...',
+                          textAlign: TextAlign.justify,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                        SizedBox(height: 12),
+                        Text(
+                          'We believe everyone deserves...',
+                          textAlign: TextAlign.justify,
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.black,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.logout, color: Colors.redAccent),
+          title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
+          onTap: () => _confirmLogout(context),
+        ),
+      ],
     ),
-    ListTile(
-      leading: const Icon(Icons.logout, color: Colors.redAccent),
-      title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
-      onTap: () => _confirmLogout(context),
-    ),
-  ],
-),
+  ),
+)
 
-            )
+
           : null,
       appBar: screenIndex == 3
           ? AppBar(
@@ -183,8 +179,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: tabScreensList[screenIndex],
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: screenIndex,
-        selectedItemColor: const Color.fromARGB(255, 82, 200, 255),
-        unselectedItemColor: Colors.grey,
+        selectedItemColor: const Color.fromARGB(255, 21, 101, 221),
+        unselectedItemColor: const Color.fromARGB(255, 95, 95, 95),
+        backgroundColor: Colors.white,
         type: BottomNavigationBarType.fixed,
         onTap: (index) => setState(() => screenIndex = index),
         items: const [
