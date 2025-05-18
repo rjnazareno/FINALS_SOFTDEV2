@@ -298,6 +298,8 @@ Future<bool> createNewUserAccount(
     return userDoc.exists;
   }
 
+
+
   // 🚪 Logout
   Future<void> logout(BuildContext context) async {
     await _auth.signOut();

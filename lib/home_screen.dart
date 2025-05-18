@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -29,11 +30,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   ];
 
   Future<void> _confirmLogout(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Confirm Logout"),
+        content: const Text("Are you sure you want to logout?"),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text("Cancel"),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text("Logout", style: TextStyle(color: Colors.redAccent)),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (confirm == true) {
+      await FirebaseAuth.instance.signOut();
+      if (!mounted) return;
+      ref.invalidate(userProvider);
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+Future<void> _confirmDeleteAccount(BuildContext context) async {
   final confirm = await showDialog<bool>(
     context: context,
     builder: (context) => AlertDialog(
-      title: const Text("Confirm Logout"),
-      content: const Text("Are you sure you want to logout?"),
+      title: const Text("Delete Account"),
+      content: const Text(
+        "Are you sure you want to delete your account? This action cannot be undone.",
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(false),
@@ -41,119 +76,174 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(true),
-          child: const Text("Logout", style: TextStyle(color: Colors.redAccent)),
+          child: const Text("Delete", style: TextStyle(color: Colors.redAccent)),
         ),
       ],
     ),
   );
 
-  if (!mounted) return;
+  if (!context.mounted) return;
 
   if (confirm == true) {
-    await FirebaseAuth.instance.signOut();
-    if (!mounted) return;
-    ref.invalidate(userProvider); // This is usually safe, but add mounted check above to be thorough
-    // ignore: use_build_context_synchronously
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-      (route) => false,
-    );
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final firestore = FirebaseFirestore.instance;
+
+      if (user != null) {
+        final uid = user.uid;
+
+        // Delete user's Firestore document
+        await firestore.collection('users').doc(uid).delete();
+
+        // (Optional) Delete related subcollections if any
+        // For example:
+        // await _deleteCollection(firestore.collection('users').doc(uid).collection('matches'));
+
+        // Delete Firebase Auth account
+        await user.delete();
+
+        ref.invalidate(userProvider);
+
+        if (!context.mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      String message = "Failed to delete account. Please re-login and try again.";
+      if (e.code == 'requires-recent-login') {
+        message = "Please log in again before deleting your account.";
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: ${e.toString()}")),
+      );
+    }
   }
 }
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       endDrawer: screenIndex == 3
-          ? 
-          
-        Drawer(
-  child: Container(
-    color: const Color.fromARGB(255, 255, 255, 255),
-    child: ListView(
-      padding: EdgeInsets.zero,
-      children: [
-        SizedBox(
-          height: 200, // Adjust height as needed
-          child: Image.asset(
-            'images/ua.png',
-            fit: BoxFit.cover, // Ensures the image fills the area
-            width: double.infinity,
-          ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.email_outlined, color: Color.fromARGB(255, 21, 101, 221)),
-          title: Text(
-            FirebaseAuth.instance.currentUser?.email ?? '',
-            style: const TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.info_outline, color: Color.fromARGB(255, 21, 101, 221)),
-          title: const Text(
-            'About Us',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.black,
-            ),
-          ),
-          onTap: () {
-            Navigator.pop(context);
-            showAboutDialog(
-              context: context,
-              applicationName: 'UAMatch',
-              applicationVersion: '1.0.0',
-              applicationLegalese: '© 2025 UA Inc.',
-              children: [
-                SingleChildScrollView(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: const [
-                        Text(
-                          'Like a pelican finding its flock...',
-                          textAlign: TextAlign.justify,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.black,
-                            fontStyle: FontStyle.italic,
+          ? Drawer(
+              child: Container(
+                color: const Color.fromARGB(255, 247, 247, 248), // Light grey background
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: ListView(
+                        padding: EdgeInsets.zero,
+                        children: [
+                          SizedBox(
+                            height: 200,
+                            child: Image.asset(
+                              'images/ua.png',
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 12),
-                        Text(
-                          'We believe everyone deserves...',
-                          textAlign: TextAlign.justify,
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.black,
+                          ListTile(
+                            leading: const Icon(Icons.email_outlined,
+                                color: Color.fromARGB(255, 21, 101, 221)),
+                            title: Text(
+                              FirebaseAuth.instance.currentUser?.email ?? '',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Color.fromARGB(255, 63, 63, 63),
+                              ),
+                            ),
                           ),
-                        ),
-                      ],
+                          ListTile(
+                            leading: const Icon(Icons.info_outline,
+                                color: Color.fromARGB(255, 21, 101, 221)),
+                            title: const Text(
+                              'About Us',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Color.fromARGB(255, 63, 63, 63),
+                              ),
+                            ),
+                            onTap: () {
+                              Navigator.pop(context);
+                              showAboutDialog(
+                                context: context,
+                                applicationName: 'UAmatch',
+                                applicationVersion: '1.0.0',
+                                applicationLegalese: '© 2025 UA Inc.',
+                                children: [
+                                  SingleChildScrollView(
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16.0),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: const [
+                                          Text(
+                                            'We are 3rd year Computer Engineering students from UA, and we created this app — UAmatch — especially for the UA community.',
+                                            textAlign: TextAlign.justify,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Color.fromARGB(
+                                                  255, 241, 238, 238),
+                                            ),
+                                          ),
+                                          SizedBox(height: 12),
+                                          Text(
+                                            'Our goal is to bring students closer together by helping them find meaningful connections, whether it’s friendship or something more. We poured our hearts (and code) into this.',
+                                            textAlign: TextAlign.justify,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Color.fromARGB(
+                                                  255, 240, 239, 239),
+                                            ),
+                                          ),
+                                          SizedBox(height: 12),
+                                          Text(
+                                            'We truly hope you enjoy using UAmatch as much as we enjoyed building it for you.',
+                                            textAlign: TextAlign.justify,
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              color: Color.fromARGB(
+                                                  255, 247, 243, 243),
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                          ListTile(
+                            leading: const Icon(Icons.logout,
+                                color: Colors.redAccent),
+                            title: const Text('Logout',
+                                style: TextStyle(color: Colors.redAccent)),
+                            onTap: () => _confirmLogout(context),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    SafeArea(
+                      child: ListTile(
+                        leading: const Icon(Icons.delete, color: Colors.redAccent),
+                        title: const Text('Delete Account',
+                            style: TextStyle(color: Colors.redAccent)),
+                        onTap: () => _confirmDeleteAccount(context),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            );
-          },
-        ),
-        ListTile(
-          leading: const Icon(Icons.logout, color: Colors.redAccent),
-          title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
-          onTap: () => _confirmLogout(context),
-        ),
-      ],
-    ),
-  ),
-)
-
-
+              ),
+            )
           : null,
       appBar: screenIndex == 3
           ? AppBar(

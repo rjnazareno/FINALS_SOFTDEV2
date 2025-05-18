@@ -6,7 +6,7 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.blue[800],
+      backgroundColor: const Color.fromARGB(255, 0, 79, 168),
       body: Center(
         child: Text(
           'UAmatch',

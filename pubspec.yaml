@@ -51,6 +51,7 @@ dependencies:
   card_swiper:
   flutter_card_swiper: 
   scrumlab_flutter_tindercard: 
+  cached_network_image: 
 
 
 dev_dependencies:
